@@ -3,18 +3,12 @@ package com.xosmig.mlmr
 import java.io.InputStream
 import java.util.*
 
-class WordCountMapper: InputStreamMapper<String, Int> {
-    override fun map(input: InputStream, context: MapperContext<String, Int>) {
+class WordCountMapper: InputStreamMapper<SString, SInt>() {
+    override fun map(input: InputStream, context: MapperContext<SString, SInt>) {
         Scanner(input).use { scanner ->
             for (token in scanner) {
-                context.output(token, 1)
+                context.output(SString(token), SInt.one)
             }
         }
-    }
-}
-
-class WordCountReducer: Reducer<String, Int, String, Int> {
-    override fun reduce(key: String, values: Iterable<Int>, context: ReducerContext<String, Int>) {
-        context.output(key, values.count())
     }
 }
