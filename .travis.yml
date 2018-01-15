@@ -1,11 +1,5 @@
 language: java
 jdk: oraclejdk8
 os: linux
-env:
-  - PROJECT_DIR="lib"
-  - PROJECT_DIR="ResourceManager"
-  - PROJECT_DIR="MapNode"
-before_install:
-  - cd "$PROJECT_DIR"
 notifications:
   email: false
