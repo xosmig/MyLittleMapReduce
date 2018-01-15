@@ -1,10 +1,7 @@
 package com.xosmig.mlmr
 
-interface ReducerContext<OK, OV> {
-    fun output(key: OK, value: OV)
-}
+sealed class Reducer
 
-// TODO: probably, should be an abstract class, just like Mapper
-interface Reducer<IK, IV, OK, OV> {
-    fun reduce(key: IK, values: Iterable<IV>, context: ReducerContext<OK, OV>)
+abstract class KeyValueReducer<IK: Any, IV: Any, OK: Any, OV: Any> {
+    abstract fun reduce(key: IK, values: Iterable<IV>, context: NodeContext<OK, OV>)
 }
