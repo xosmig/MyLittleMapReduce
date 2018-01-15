@@ -42,9 +42,17 @@ project(":lib") {
     }
 }
 
+project(":ApplicationMaster") {
+    dependencies {
+        compile project(":lib")
+        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    }
+}
+
 project(":ResourceManager") {
     dependencies {
         compile project(":lib")
+        compile project(":ApplicationMaster")
         compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
     }
 }
