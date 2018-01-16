@@ -15,12 +15,12 @@ class CompiledJobConfig(config: JobConfig): Serializable {
 
 interface AM2RMRmi: Remote {
     @Throws(RemoteException::class)
-    fun startJob(config: CompiledJobConfig): Int
+    fun startJob(stub: RM2AMRmi, config: CompiledJobConfig): Int
 }
 
 interface RM2AMRmi: Remote {
     @Throws(RemoteException::class)
-    fun kill(reason: String?)
+    fun shutdown(reason: String?)
 
     @Throws(RemoteException::class)
     fun taskComplete(id: Int)
