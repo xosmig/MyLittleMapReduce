@@ -30,11 +30,14 @@ allprojects {
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
     }
+
+    dependencies {
+        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    }
 }
 
 project(":lib") {
     dependencies {
-        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
         compile "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$serialization_version"
         compile "org.jetbrains.kotlin:kotlin-reflect"
         testCompile "junit:junit:4.12"
@@ -45,7 +48,12 @@ project(":lib") {
 project(":ApplicationMaster") {
     dependencies {
         compile project(":lib")
-        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+    }
+}
+
+project(":ComputationNode") {
+    dependencies {
+        compile project(":lib")
     }
 }
 
@@ -53,6 +61,6 @@ project(":ResourceManager") {
     dependencies {
         compile project(":lib")
         compile project(":ApplicationMaster")
-        compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+        compile project(":ComputationNode")
     }
 }

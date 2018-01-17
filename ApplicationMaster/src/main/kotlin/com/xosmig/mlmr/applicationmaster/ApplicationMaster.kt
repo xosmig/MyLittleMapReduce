@@ -1,15 +1,17 @@
 package com.xosmig.mlmr.applicationmaster
 
+import com.xosmig.mlmr.CompiledJobConfig
 import com.xosmig.mlmr.DEFAULT_REGISTRY_PORT
+import com.xosmig.mlmr.JobConfig
 import com.xosmig.mlmr.RM_REGISTRY_KEY
 import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 
 abstract class ApplicationMaster
-        (registryHost: String? = null, registryPort: Int = DEFAULT_REGISTRY_PORT): RM2AMRmi {
-    private val resourceManager =
-            LocateRegistry.getRegistry(registryHost, registryPort).lookup(RM_REGISTRY_KEY) as AM2RMRmi
-    private val stub by lazy { UnicastRemoteObject.exportObject(this, 0) as RM2AMRmi }
+        (registryHost: String? = null, registryPort: Int = DEFAULT_REGISTRY_PORT): ApplicationMasterRmi {
+    private val resourceManager = LocateRegistry.getRegistry(registryHost, registryPort).lookup(RM_REGISTRY_KEY)
+            as ResourceManagerRmiForApplicationMaster
+    private val stub by lazy { UnicastRemoteObject.exportObject(this, 0) as ApplicationMasterRmi }
 
     abstract fun run()
 
@@ -26,10 +28,10 @@ abstract class ApplicationMaster
     }
 
     fun waitForJob(id: JobId) {
-
+        TODO()
     }
 
-    // TODO?: use java Feature? Or something similar?
+    // TODO?: use java Future? Or something similar?
     class JobId internal constructor(private val id: Int) {
         override fun equals(other: Any?): Boolean {
             if (this === other) return true

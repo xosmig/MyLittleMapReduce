@@ -1,6 +1,6 @@
 import com.xosmig.mlmr.*
 import com.xosmig.mlmr.applicationmaster.ApplicationMaster
-import com.xosmig.mlmr.applicationmaster.JobConfig
+import com.xosmig.mlmr.JobConfig
 import java.io.InputStream
 
 class WordCountMapper: InputStreamMapper<SString, SInt>(SString::class, SInt::class) {

@@ -1,4 +1,5 @@
 rootProject.name = 'MyLittleMapReduce'
-include ':lib', ':ResourceManager', ':ApplicationMaster'
+include ':lib', ':ResourceManager', ':ApplicationMaster', ':ComputationNode'
 include 'ApplicationMaster'
+include 'ComputationNode'
 

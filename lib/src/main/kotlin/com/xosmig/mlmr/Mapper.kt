@@ -6,11 +6,14 @@ import java.io.BufferedInputStream
 import java.io.InputStream
 import kotlin.reflect.KClass
 
-interface Mapper
+interface Mapper {
+    abstract fun map(input: InputStream, context: Context)
+}
 
 abstract class KeyValueMapper<IK: Any, IV: Any, OK: Any, OV: Any> (
         ikKlass: KClass<IK>, ivKlass: KClass<IV>,
-        okKlass: KClass<OK>, ovKlass: KClass<OV>): Node<OK, OV>(okKlass, ovKlass), Mapper {
+        okKlass: KClass<OK>, ovKlass: KClass<OV>
+): Node<OK, OV>(okKlass, ovKlass), Mapper {
 
     private val serializer = KVPair.serializer(ikKlass.serializer(), ivKlass.serializer())
 
@@ -26,9 +29,18 @@ abstract class KeyValueMapper<IK: Any, IV: Any, OK: Any, OV: Any> (
             }
         }
     }
+
+    final override fun map(input: InputStream, context: Context) {
+        return map(input, nodeContext(context))
+    }
 }
 
 abstract class InputStreamMapper<OK: Any, OV: Any>(
         okKlass: KClass<OK>, ovKlass: KClass<OV>): Node<OK, OV>(okKlass, ovKlass), Mapper {
+
     abstract fun map(input: InputStream, context: NodeContext<OK, OV>)
+
+    final override fun map(input: InputStream, context: Context) {
+        return map(input, nodeContext(context))
+    }
 }

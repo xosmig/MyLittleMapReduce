@@ -1,24 +1,15 @@
 package com.xosmig.mlmr.applicationmaster
 
-import com.xosmig.mlmr.ClassRef
-import java.io.Serializable
+import com.xosmig.mlmr.CompiledJobConfig
 import java.rmi.Remote
 import java.rmi.RemoteException
 
-class CompiledJobConfig(config: JobConfig): Serializable {
-    val mapper = ClassRef(config.mapper)
-    val combiner = if (config.combiner != null) { ClassRef(config.combiner) } else { null }
-    val reducer = ClassRef(config.reducer)
-    val inputDir = config.inputDir
-    val outputDir = config.outputDir
-}
-
-interface AM2RMRmi: Remote {
+interface ResourceManagerRmiForApplicationMaster: Remote {
     @Throws(RemoteException::class)
-    fun startJob(stub: RM2AMRmi, config: CompiledJobConfig): Int
+    fun startJob(stub: ApplicationMasterRmi, config: CompiledJobConfig): Int
 }
 
-interface RM2AMRmi: Remote {
+interface ApplicationMasterRmi: Remote {
     @Throws(RemoteException::class)
     fun shutdown(reason: String?)
 
