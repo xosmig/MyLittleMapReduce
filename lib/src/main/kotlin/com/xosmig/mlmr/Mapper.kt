@@ -7,7 +7,7 @@ import java.io.InputStream
 import kotlin.reflect.KClass
 
 interface Mapper {
-    abstract fun map(input: InputStream, context: Context)
+    fun map(input: InputStream, context: Context)
 }
 
 abstract class KeyValueMapper<IK: Any, IV: Any, OK: Any, OV: Any> (
@@ -23,16 +23,14 @@ abstract class KeyValueMapper<IK: Any, IV: Any, OK: Any, OV: Any> (
         while (true) {
             BufferedInputStream(input).use { bufferedInput ->
                 while (true) {
-                    val (key, value) = bufferedInput.readCBORObject(serializer) ?: break
-                    map(key, value, context)
+                    val kv = bufferedInput.readCBORObject(serializer) ?: break
+                    map(kv.key, kv.value, context)
                 }
             }
         }
     }
 
-    final override fun map(input: InputStream, context: Context) {
-        return map(input, nodeContext(context))
-    }
+    final override fun map(input: InputStream, context: Context) = map(input, nodeContext(context))
 }
 
 abstract class InputStreamMapper<OK: Any, OV: Any>(
@@ -40,7 +38,5 @@ abstract class InputStreamMapper<OK: Any, OV: Any>(
 
     abstract fun map(input: InputStream, context: NodeContext<OK, OV>)
 
-    final override fun map(input: InputStream, context: Context) {
-        return map(input, nodeContext(context))
-    }
+    final override fun map(input: InputStream, context: Context) = map(input, nodeContext(context))
 }

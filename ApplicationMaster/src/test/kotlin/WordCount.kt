@@ -9,7 +9,7 @@ class WordCountMapper: InputStreamMapper<SString, SInt>(SString::class, SInt::cl
     }
 }
 
-class WordCountApp: ApplicationMaster() {
+class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
     override fun run() {
         val config = JobConfig(
                 WordCountMapper::class.java,

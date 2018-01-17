@@ -51,7 +51,7 @@ project(":ApplicationMaster") {
     }
 }
 
-project(":ComputationNode") {
+project(":MapNode") {
     dependencies {
         compile project(":lib")
     }
@@ -61,6 +61,6 @@ project(":ResourceManager") {
     dependencies {
         compile project(":lib")
         compile project(":ApplicationMaster")
-        compile project(":ComputationNode")
+        compile project(":MapNode")
     }
 }
