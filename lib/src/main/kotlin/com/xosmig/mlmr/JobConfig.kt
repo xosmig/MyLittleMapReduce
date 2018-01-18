@@ -1,6 +1,7 @@
 package com.xosmig.mlmr
 
 import java.io.Serializable
+import java.nio.file.Path
 
 data class JobConfig(
         val mapper: Class<out Node<*, *>>,
@@ -17,10 +18,9 @@ class CompiledJobConfig(config: JobConfig): Serializable {
     val outputDir = config.outputDir
 }
 
-class MapConfig(config: CompiledJobConfig): Serializable {
+class MapConfig(config: CompiledJobConfig, val inputPath: String): Serializable {
     val mapper = config.mapper
     val combiner = config.combiner
-    val inputDir = config.inputDir
     val outputDir = config.outputDir // TODO?
 }
 

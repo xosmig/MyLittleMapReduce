@@ -11,7 +11,7 @@ interface ResourceManagerRmiForMapNode: Remote {
      * The MapNode should die in this case.
      */
     @Throws(RemoteException::class)
-    fun getTask(id: WorkerId, stub: MapNodeRmi): MapConfig?
+    fun registerMapNode(id: WorkerId, stub: MapNodeRmi): MapConfig?
 }
 
 /**

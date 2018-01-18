@@ -14,7 +14,7 @@ class MapNode(registryHost: String, registryPort: Int, val id: WorkerId): MapNod
     private val stub by lazy { UnicastRemoteObject.exportObject(this, 0) as MapNodeRmi }
 
     fun run() {
-        val task = resourceManager.getTask(id, stub)
+        val task = resourceManager.registerMapNode(id, stub)
 
         TODO()
     }
