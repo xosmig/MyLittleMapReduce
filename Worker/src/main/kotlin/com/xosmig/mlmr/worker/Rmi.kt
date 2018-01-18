@@ -6,7 +6,12 @@ import java.io.Serializable
 import java.rmi.Remote
 import java.rmi.RemoteException
 
-interface ResourceManagerRmiForWorker: Remote {
+interface ResourceManagerRmiForWorker {
+    @Throws(RemoteException::class)
+    fun workersManager(): WorkersManagerRmi
+}
+
+interface WorkersManagerRmi: Remote {
     /**
      * @return Config for the task or null, if the are no tasks.
      * The MapNode should die in this case.
