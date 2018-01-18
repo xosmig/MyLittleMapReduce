@@ -1,6 +1,8 @@
 package com.xosmig.mlmr.worker
 
 import com.xosmig.mlmr.*
+import java.nio.file.Files
+import java.nio.file.Paths
 import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 
@@ -22,17 +24,19 @@ class Worker(registryHost: String, registryPort: Int, val id: WorkerId): WorkerR
 
         when (task) {
             is MapTask -> {
-                // TODO: doMap(task)
+                Files.newInputStream(Paths.get(task.mapInputPath)).use { input ->
+                    val mapper = task.mapper.load().newInstance() as Mapper
+                    // TODO: Adequate context
+                    mapper.map(input, StdoutContext())
+                }
             }
             is ReduceTask -> {
                 // TODO: doReduce(task)
             }
         }
-
-        TODO()
+        workersManager.workerFinished(id, true)
+        return 0
     }
 
-    override fun check(): WorkerStatus {
-        TODO()
-    }
+    override fun check(): WorkerStatus = WorkerStatus(0.5f)  // TODO
 }

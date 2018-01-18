@@ -18,12 +18,14 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     private val workers = ConcurrentHashMap<WorkerId, WorkerState>()
 
     override fun registerWorker(id: WorkerId, workerRmi: WorkerRmi): WorkerTask? {
+        println("Worker $id is here for registration")
         val workerState = workers[id] ?: return null
         synchronized(workerState.lock) {
             // note that the worker might have already been destroyed
             workerState.registered = true
             workerState.workerRmi = workerRmi
             workerState.lock.notify()
+            println("Worker $id has been registered")
             return workerState.task
         }
     }
@@ -43,10 +45,9 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     fun startMapWorker(jobState: JobState, inputFile: Path) {
         getPlaceForNewWorker()
         Thread {
-            // TODO: more adequate strategy
             var ok = false
             for (i in 1..10) {
-                ok = tryRunMapNode(jobState, inputFile)
+                ok = tryRunMapWorker(jobState, inputFile)
                 if (ok) {
                     break
                 }
@@ -61,7 +62,9 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     /**
      * @return false if failed to complete the task. True otherwise.
      */
-    private fun tryRunMapNode(job: JobState, inputPath: Path): Boolean {
+    private fun tryRunMapWorker(job: JobState, inputPath: Path): Boolean {
+        println("Creating map worker for file: '$inputPath'")
+
         val workerId = idGenerator.next()
         val mapOutputDir = job.tmpDir.resolve("Worker${workerId.value}")
 
@@ -77,11 +80,12 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         try {
             val process = startWorkerProcess(workerId)
             synchronized(workerState.lock) {
+                println("Waiting for worker $workerId to register...")
                 if (!workerState.registered) {
                     workerState.lock.wait(WORKER_REGISTRATION_TIMEOUT)
                 }
                 if (!workerState.registered) {
-                    // Assume timeout. Clean and retry
+                    println("Worker $workerId registration time out")
                     process.destroy()
                     return false
                 }
@@ -116,6 +120,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     private fun getPlaceForNewWorker() {
         synchronized(workerCounterLock) {
             while (workerCounter == maxWorkerCnt) {
+                println("Waiting for a place for a new worker...")
                 workerCounterLock.wait()
             }
             workerCounter += 1
@@ -124,6 +129,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
     @Throws(IOException::class)
     private fun startWorkerProcess(id: WorkerId): Process {
+        println("Starting worker $id")
         // arguments passed as a json string to the only CLI parameter of the new process
         val processConfig = JSON.stringify(WorkerProcessConfig(registryHost, registryPort, id))
         return startProcess(com.xosmig.mlmr.worker.Main::class.java, processConfig)

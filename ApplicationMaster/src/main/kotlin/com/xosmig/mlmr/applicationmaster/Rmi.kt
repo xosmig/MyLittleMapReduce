@@ -12,8 +12,5 @@ interface ResourceManagerRmiForApplicationMaster: Remote {
 
 interface ApplicationMasterRmi: Remote {
     @Throws(RemoteException::class)
-    fun shutdown(reason: String?)
-
-    @Throws(RemoteException::class)
     fun jobComplete(id: JobId)
 }

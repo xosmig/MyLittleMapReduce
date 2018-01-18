@@ -51,7 +51,7 @@ internal class ResourceManager(
 
         // schedule jobs
         while (true) {
-            val job = jobQueue.poll()
+            val job = jobQueue.take()
             assert(job != null)
 
             if (job.mapStageDone) {

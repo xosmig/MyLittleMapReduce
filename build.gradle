@@ -48,6 +48,7 @@ project(":lib") {
 project(":ApplicationMaster") {
     dependencies {
         compile project(":lib")
+        testCompile "commons-io:commons-io:2.4"
     }
 }
 
