@@ -18,12 +18,6 @@ class CompiledJobConfig(config: JobConfig): Serializable {
     val outputDir = config.outputDir
 }
 
-class MapConfig(config: CompiledJobConfig, val inputPath: String): Serializable {
-    val mapper = config.mapper
-    val combiner = config.combiner
-    val outputDir = config.outputDir // TODO?
-}
-
 class ReduceConfig(config: CompiledJobConfig): Serializable {
     val reducer = config.reducer
     val outputDir = config.outputDir

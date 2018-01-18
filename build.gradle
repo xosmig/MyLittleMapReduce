@@ -51,7 +51,7 @@ project(":ApplicationMaster") {
     }
 }
 
-project(":MapNode") {
+project(":Worker") {
     dependencies {
         compile project(":lib")
     }
@@ -61,6 +61,7 @@ project(":ResourceManager") {
     dependencies {
         compile project(":lib")
         compile project(":ApplicationMaster")
-        compile project(":MapNode")
+        compile project(":Worker")
+        compile "commons-io:commons-io:2.4"
     }
 }

@@ -1,4 +1,4 @@
-package com.xosmig.mlmr.mapnode
+package com.xosmig.mlmr.worker
 
 import com.xosmig.mlmr.WorkerId
 import kotlinx.serialization.Serializable
@@ -25,6 +25,6 @@ object Main {
             exitProcess(3)
         }
 
-        MapNode(processConfig.registryHost, processConfig.registryPort, processConfig.id).run()
+        exitProcess(Worker(processConfig.registryHost, processConfig.registryPort, processConfig.id).run())
     }
 }
