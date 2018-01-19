@@ -15,8 +15,7 @@ import java.util.concurrent.LinkedBlockingQueue
 internal class ResourceManager(
         private val thisHost: String,
         private val registryPort: Int):
-        ResourceManagerRmiForApplicationMaster,
-        ResourceManagerRmiForWorker {
+        ResourceManagerRmiForApplicationMaster {
 
     private val jobIdGenerator = JobId.Generator()
     private val jobQueue = LinkedBlockingQueue<JobState>()
@@ -32,12 +31,8 @@ internal class ResourceManager(
             val tmpDir = outputDir.resolve(".mlmr.tmp")
             Files.createDirectory(tmpDir)
 
-            try {
-                jobQueue.add(JobState(applicationMasterStub, config, id, tmpDir))
-                return id
-            } finally {
-                FileUtils.deleteDirectory(tmpDir.toFile())
-            }
+            jobQueue.add(JobState(applicationMasterStub, config, id, tmpDir))
+            return id
         } catch (e: Exception) {
             throw e // all exception are handled by the ApplicationMaster
         }
@@ -46,8 +41,8 @@ internal class ResourceManager(
     fun run(): Int {
         // Make the resource manager visible
         val registry = LocateRegistry.createRegistry(registryPort)
-        val stub = UnicastRemoteObject.exportObject(this, 0)
-        registry.bind(RM_REGISTRY_KEY, stub)
+        registry.bind(RM_REGISTRY_KEY, UnicastRemoteObject.exportObject(this, 0))
+        registry.bind(WM_REGISTRY_KEY, UnicastRemoteObject.exportObject(workersManager, 0))
 
         // schedule jobs
         while (true) {
@@ -75,6 +70,4 @@ internal class ResourceManager(
             jobQueue.put(job)
         }.start()
     }
-
-    override fun workersManager(): WorkersManagerRmi = workersManager
 }

@@ -5,6 +5,7 @@ import com.xosmig.mlmr.worker.*
 import kotlinx.serialization.json.JSON
 import org.apache.commons.io.FileUtils
 import java.io.IOException
+import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
@@ -66,7 +67,15 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         println("Creating map worker for file: '$inputPath'")
 
         val workerId = idGenerator.next()
-        val mapOutputDir = job.tmpDir.resolve("Worker${workerId.value}")
+
+        val mapOutputDir = job.tmpDir.resolve("map.output").resolve("Worker$workerId")
+        val logFile = job.tmpDir.resolve("map.log").resolve("Worker$workerId")
+        try {
+            Files.createDirectories(mapOutputDir)
+            Files.createDirectories(logFile.parent)
+        } catch (e: Exception) {
+            TODO()
+        }
 
         val workerState = WorkerState(job, MapTask(
                 mapper = job.config.mapper,
@@ -75,10 +84,10 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 mapOutputDir = mapOutputDir.toString()
         ))
 
+        val process = startWorkerProcess(workerId, logFile)
         workers.put(workerId, workerState)
 
         try {
-            val process = startWorkerProcess(workerId)
             synchronized(workerState.lock) {
                 println("Waiting for worker $workerId to register...")
                 if (!workerState.registered) {
@@ -86,24 +95,25 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 }
                 if (!workerState.registered) {
                     println("Worker $workerId registration time out")
-                    process.destroy()
+                    FileUtils.deleteDirectory(mapOutputDir.toFile())
                     return false
                 }
             }
 
             // periodic health and status checks
             while (true) {
-                val status = try {
+                val healthy = try {
                     workerState.workerRmi.check()
+                    true
                 } catch (e: Throwable) {
-                    process.destroy()
-                    return false
+                    // task might have finished successfully
+                    false
                 }
 
                 synchronized(workerState.lock) {
                     workerState.lock.wait(300)
                     if (workerState.finished && workerState.success) {
-                        job.completedTasks?.countDown() ?: TODO()  // TODO
+                        job.completedTasks!!.countDown()
                         return true
                     }
                     if (workerState.finished && workerState.success) {
@@ -111,9 +121,16 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                         return false
                     }
                 }
+
+                if (!healthy) {
+                    println("Health-check failed for worker $workerId")
+                    FileUtils.deleteDirectory(mapOutputDir.toFile())
+                    return false
+                }
             }
         } finally {
             workers.remove(workerId)
+            process.destroy()
         }
     }
 
@@ -128,10 +145,10 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     }
 
     @Throws(IOException::class)
-    private fun startWorkerProcess(id: WorkerId): Process {
+    private fun startWorkerProcess(id: WorkerId, logFile: Path): Process {
         println("Starting worker $id")
         // arguments passed as a json string to the only CLI parameter of the new process
-        val processConfig = JSON.stringify(WorkerProcessConfig(registryHost, registryPort, id))
+        val processConfig = JSON.stringify(WorkerProcessConfig(registryHost, registryPort, id, logFile.toString()))
         return startProcess(com.xosmig.mlmr.worker.Main::class.java, processConfig)
     }
 

@@ -6,6 +6,7 @@ import java.net.URLClassLoader
 
 const val DEFAULT_REGISTRY_PORT = 16621
 const val RM_REGISTRY_KEY = "ResourceManager"
+const val WM_REGISTRY_KEY = "WorkersManager"
 
 /**
  * Used to pass classes via RMI

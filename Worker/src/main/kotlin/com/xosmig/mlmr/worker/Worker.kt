@@ -5,27 +5,38 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
+import java.util.concurrent.TimeUnit
+import java.util.logging.Level.INFO
+import java.util.logging.Level.WARNING
+import java.util.logging.Logger
 
-class Worker(registryHost: String, registryPort: Int, val id: WorkerId): WorkerRmi {
-    private val resourceManager = run {
+internal class Worker(registryHost: String, registryPort: Int, val id: WorkerId): WorkerRmi {
+    private val workersManager: WorkersManagerRmi
+
+    init {
+        @Suppress("NAME_SHADOWING")
+        val registryHost =  if (registryHost == "localhost") { null } else { registryHost }
         val registry = LocateRegistry.getRegistry(registryHost, registryPort)
-        registry.lookup(RM_REGISTRY_KEY) as ResourceManagerRmiForWorker
+        workersManager = registry.lookup(WM_REGISTRY_KEY) as WorkersManagerRmi
     }
-    private val workersManager = resourceManager.workersManager()
 
+    private val logger = Logger.getLogger(Worker::class.java.name)
     private val stub by lazy { UnicastRemoteObject.exportObject(this, 0) as WorkerRmi }
 
     fun run(): Int {
+        Logger.getLogger(Main.javaClass.name).log(INFO, "Registering...")
         val task = workersManager.registerWorker(id, stub)
         if (task == null) {
             System.err.println("The task is not found")
             return 3
         }
+        logger.log(INFO, "Registered")
 
         when (task) {
             is MapTask -> {
+                val mapper = task.mapper.load().newInstance() as Mapper
+                logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 Files.newInputStream(Paths.get(task.mapInputPath)).use { input ->
-                    val mapper = task.mapper.load().newInstance() as Mapper
                     // TODO: Adequate context
                     mapper.map(input, StdoutContext())
                 }
@@ -35,6 +46,12 @@ class Worker(registryHost: String, registryPort: Int, val id: WorkerId): WorkerR
             }
         }
         workersManager.workerFinished(id, true)
+
+        logger.log(INFO, "Successfully finished")
+        // Expect resource manager to kill this process within 10 seconds
+        Thread.sleep(TimeUnit.SECONDS.toMillis(10))
+
+        logger.log(WARNING, "Seems that resource manager has failed to kill this process")
         return 0
     }
 

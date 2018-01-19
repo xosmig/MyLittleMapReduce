@@ -6,11 +6,6 @@ import java.io.Serializable
 import java.rmi.Remote
 import java.rmi.RemoteException
 
-interface ResourceManagerRmiForWorker {
-    @Throws(RemoteException::class)
-    fun workersManager(): WorkersManagerRmi
-}
-
 interface WorkersManagerRmi: Remote {
     /**
      * @return Config for the task or null, if the are no tasks.
@@ -30,7 +25,7 @@ interface WorkerRmi : Remote {
 }
 
 
-sealed class WorkerTask
+sealed class WorkerTask: Serializable
 
 data class MapTask(val mapper: ClassRef,
                    val combiner: ClassRef?,

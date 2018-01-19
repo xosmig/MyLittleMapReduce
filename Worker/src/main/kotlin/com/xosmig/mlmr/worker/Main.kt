@@ -3,13 +3,20 @@ package com.xosmig.mlmr.worker
 import com.xosmig.mlmr.WorkerId
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JSON
+import java.util.logging.FileHandler
+import java.util.logging.Level
+import java.util.logging.Logger
+import java.util.logging.SimpleFormatter
 import kotlin.system.exitProcess
 
 @Serializable
-data class WorkerProcessConfig(val registryHost: String, val registryPort: Int, val id: WorkerId)
+data class WorkerProcessConfig(val registryHost: String,
+                               val registryPort: Int,
+                               val id: WorkerId,
+                               val logFile: String)
 
 object Main {
-    val helpMessage: String = "Expected single parameter: JSON representation of `WorkerProcessConfig`"
+    private val helpMessage: String = "Expected single parameter: JSON representation of `WorkerProcessConfig`"
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -18,13 +25,22 @@ object Main {
             exitProcess(2)
         }
         val processConfig = try {
-            JSON.Companion.parse<WorkerProcessConfig>(args[0])
+            JSON.parse<WorkerProcessConfig>(args[0])
         } catch (_: Exception) {
             System.err.println("Invalid parameter")
             System.err.println(helpMessage)
             exitProcess(3)
         }
 
-        exitProcess(Worker(processConfig.registryHost, processConfig.registryPort, processConfig.id).run())
+        Logger.getLogger("").addHandler(FileHandler(processConfig.logFile).apply { formatter = SimpleFormatter() })
+        val logger = Logger.getLogger(Main.javaClass.name)
+        logger.log(Level.INFO, "Process started")
+
+        try {
+            val workerClass = Worker(processConfig.registryHost, processConfig.registryPort, processConfig.id)
+            exitProcess(workerClass.run())
+        } catch (e: Throwable) {
+            logger.log(Level.SEVERE, "", e)
+        }
     }
 }
