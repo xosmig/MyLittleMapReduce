@@ -12,16 +12,16 @@ class JobConfig private constructor(
     companion object {
 
         fun<K1: Any, V1: Any, K2: Any, V2: Any, K3: Any, V3: Any> create(
-                mapper: Class<out TypedMapper<K1, V1>>,
-                combiner: Class<out TypedReducer<K1, V1, K2, V2>>,
-                reducer: Class<out TypedReducer<K2, V2, K3, V3>>,
+                mapper: Class<out Mapper<K1, V1>>,
+                combiner: Class<out Reducer<K1, V1, K2, V2>>,
+                reducer: Class<out Reducer<K2, V2, K3, V3>>,
                 inputDir: String,
                 outputDir: String
         ): JobConfig = JobConfig(mapper, combiner, reducer, inputDir, outputDir)
 
         fun<K1: Any, V1: Any, K3: Any, V3: Any> create(
-                mapper: Class<out TypedMapper<K1, V1>>,
-                reducer: Class<out TypedReducer<K1, V1, K3, V3>>,
+                mapper: Class<out Mapper<K1, V1>>,
+                reducer: Class<out Reducer<K1, V1, K3, V3>>,
                 inputDir: String,
                 outputDir: String
         ): JobConfig = JobConfig(mapper, null, reducer, inputDir, outputDir)

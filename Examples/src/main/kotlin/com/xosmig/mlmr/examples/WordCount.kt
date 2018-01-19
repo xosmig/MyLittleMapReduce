@@ -15,23 +15,23 @@ data class MyOwnKeyClass(val key: String) {
     override fun toString(): String = key
 }
 
-class WordCountMapper: TypedMapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::class) {
+class WordCountMapper: Mapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::class) {
     override fun map(input: InputStream, context: NodeContext<MyOwnKeyClass, SInt>) {
         BufferedInputStream(input).use { bufferedInput ->
             Scanner(bufferedInput).use { scanner ->
                 while (scanner.hasNext()) {
-                    context.output(MyOwnKeyClass(scanner.next()), SInt(1))
+                    context.output(MyOwnKeyClass(scanner.next()), SInt.one)
                 }
             }
         }
     }
 }
 
-class WordCountReducer: TypedReducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
+class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
         (MyOwnKeyClass::class, SInt::class, MyOwnKeyClass::class, SInt::class) {
 
-    override fun reduce(key: MyOwnKeyClass, values: Iterable<SInt>, context: NodeContext<MyOwnKeyClass, SInt>) {
-        TODO()
+    override fun reduce(key: MyOwnKeyClass, values: Sequence<SInt>, context: NodeContext<MyOwnKeyClass, SInt>) {
+        // TODO
     }
 }
 

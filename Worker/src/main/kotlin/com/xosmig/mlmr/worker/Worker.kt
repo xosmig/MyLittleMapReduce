@@ -34,7 +34,7 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
 
         when (task) {
             is MapTask -> {
-                val mapper = task.mapper.load().newInstance() as Mapper
+                val mapper = task.mapper.load().newInstance() as Mapper<*, *>
                 logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 Files.newInputStream(Paths.get(task.mapInputPath)).use { input ->
                     WorkerContext(workerId, Paths.get(task.outputDir)).use { context ->
