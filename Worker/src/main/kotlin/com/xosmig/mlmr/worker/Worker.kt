@@ -10,7 +10,7 @@ import java.util.logging.Level.INFO
 import java.util.logging.Level.WARNING
 import java.util.logging.Logger
 
-internal class Worker(registryHost: String, registryPort: Int, val id: WorkerId): WorkerRmi {
+internal class Worker(registryHost: String, registryPort: Int, val workerId: WorkerId): WorkerRmi {
     private val workersManager: WorkersManagerRmi
 
     init {
@@ -25,7 +25,7 @@ internal class Worker(registryHost: String, registryPort: Int, val id: WorkerId)
 
     fun run(): Int {
         Logger.getLogger(Main.javaClass.name).log(INFO, "Registering...")
-        val task = workersManager.registerWorker(id, stub)
+        val task = workersManager.registerWorker(workerId, stub)
         if (task == null) {
             System.err.println("The task is not found")
             return 3
@@ -37,7 +37,7 @@ internal class Worker(registryHost: String, registryPort: Int, val id: WorkerId)
                 val mapper = task.mapper.load().newInstance() as Mapper
                 logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 Files.newInputStream(Paths.get(task.mapInputPath)).use { input ->
-                    WorkerContext(Paths.get(task.outputDir)).use { context ->
+                    WorkerContext(workerId, Paths.get(task.outputDir)).use { context ->
                         mapper.map(input, context)
                     }
                 }
@@ -46,7 +46,7 @@ internal class Worker(registryHost: String, registryPort: Int, val id: WorkerId)
                 // TODO: doReduce(task)
             }
         }
-        workersManager.workerFinished(id, true)
+        workersManager.workerFinished(workerId, true)
 
         logger.log(INFO, "Successfully finished")
         // Expect resource manager to kill this process within 10 seconds

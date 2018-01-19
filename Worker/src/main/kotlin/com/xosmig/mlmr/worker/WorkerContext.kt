@@ -15,21 +15,24 @@ class WorkerContext(private val workerId: WorkerId, private val outputDir: Path)
     private val outputStreams = HashMap<Any, OutputStream>()
 
     @Synchronized
-    override fun <K: Any, V: Any> output(key: K, value: V, serializer: KSerializer<KVPair<K, V>>) {
-        var outs = outputStreams[key]
-        if (outs == null) {
-            val hash = key.hashCode()
-            val dir = outputDir.resolve(hash.toString())
-            Files.createDirectories(dir)
-            val lastIdx = Files.newDirectoryStream(dir)
-                    .map { it.fileName.toString().toInt() }
-                    .max() ?: -1
-            val filename = "Worker${workerId}_key#${lastIdx + 1}"
-            val stream: OutputStream = Files.newOutputStream(dir.resolve(filename))
-            outputStreams.put(key, stream)
-            outs = stream
-        }
-        outs.writeCBORObject(KVPair(key, value), serializer)
+    override fun <K: Any, V: Any> output(key: K, value: V,
+                                         keySerializer: KSerializer<K>, valueSerializer: KSerializer<V>) {
+        val outs = outputStreams[key] ?: newOutputStream(key, keySerializer)
+        outs.writeCBORObject(value, valueSerializer)
+    }
+
+    fun<K: Any> newOutputStream(key: K, serializer: KSerializer<K>): OutputStream {
+        val hash = key.hashCode()
+        val dir = outputDir.resolve(hash.toString())
+        Files.createDirectories(dir)
+        val lastIdx = Files.newDirectoryStream(dir)
+                .map { it.fileName.toString().toInt() }
+                .max() ?: -1
+        val filename = "Worker${workerId}_key#${lastIdx + 1}"
+        val outs = Files.newOutputStream(dir.resolve(filename)) as OutputStream
+        outputStreams.put(key, outs)
+        outs.writeCBORObject(key, serializer)
+        return outs
     }
 
     @Throws(IOException::class)

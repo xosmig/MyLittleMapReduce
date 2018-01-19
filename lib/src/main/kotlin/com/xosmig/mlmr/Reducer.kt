@@ -20,7 +20,6 @@ abstract class TypedReducer<IK: Any, IV: Any, OK: Any, OV: Any>(
     fun reduce(key: IK, values: Iterable<IV>, context: Context) = reduce(key, values, nodeContext(context))
 
     override final fun reduce(input: InputStream, context: Context) {
-        TODO()
 //        BufferedInputStream(input).use { bufferedInput ->
 //            while (true) {
 //                val kv = bufferedInput.readCBORObject(serializer) ?: break
