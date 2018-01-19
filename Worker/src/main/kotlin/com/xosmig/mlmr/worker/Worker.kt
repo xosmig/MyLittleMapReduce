@@ -37,8 +37,9 @@ internal class Worker(registryHost: String, registryPort: Int, val id: WorkerId)
                 val mapper = task.mapper.load().newInstance() as Mapper
                 logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 Files.newInputStream(Paths.get(task.mapInputPath)).use { input ->
-                    // TODO: Adequate context
-                    mapper.map(input, StdoutContext())
+                    WorkerContext(Paths.get(task.outputDir)).use { context ->
+                        mapper.map(input, context)
+                    }
                 }
             }
             is ReduceTask -> {

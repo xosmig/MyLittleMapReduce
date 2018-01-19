@@ -25,16 +25,18 @@ interface WorkerRmi : Remote {
 }
 
 
-sealed class WorkerTask: Serializable
+sealed class WorkerTask: Serializable {
+    abstract val outputDir: String
+}
 
 data class MapTask(val mapper: ClassRef,
                    val combiner: ClassRef?,
                    val mapInputPath: String,
-                   val mapOutputDir: String): WorkerTask(), Serializable
+                   override val outputDir: String): WorkerTask(), Serializable
 
 data class ReduceTask(val reducer: ClassRef,
                       val reduceInputDir: String,
-                      val reduceOutputDir: String): WorkerTask(), Serializable
+                      override val outputDir: String): WorkerTask(), Serializable
 
 
 /**

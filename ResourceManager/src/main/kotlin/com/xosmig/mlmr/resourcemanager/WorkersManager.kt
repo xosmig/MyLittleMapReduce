@@ -81,7 +81,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 mapper = job.config.mapper,
                 combiner = job.config.combiner,
                 mapInputPath = inputPath.toString(),
-                mapOutputDir = mapOutputDir.toString()
+                outputDir = mapOutputDir.toString()
         ))
 
         val process = startWorkerProcess(workerId, logFile)
