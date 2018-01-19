@@ -10,7 +10,7 @@ internal fun startProcess(klass: Class<*>, vararg args: String): Process {
     val classpath = System.getProperty("java.class.path")
     val className = klass.canonicalName
 
-    val builder = ProcessBuilder(javaBin, "-cp", classpath, className, *args)
+    val builder = ProcessBuilder(javaBin, "-classpath", classpath, className, *args)
 
     return builder.start()
 }

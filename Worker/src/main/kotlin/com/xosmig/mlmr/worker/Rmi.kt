@@ -21,7 +21,7 @@ interface WorkersManagerRmi: Remote {
 
 interface WorkerRmi : Remote {
     @Throws(RemoteException::class)
-    fun check(): WorkerStatus
+    fun healthCheck()
 }
 
 
@@ -37,9 +37,3 @@ data class MapTask(val mapper: ClassRef,
 data class ReduceTask(val reducer: ClassRef,
                       val reduceInputDir: String,
                       override val outputDir: String): WorkerTask(), Serializable
-
-
-/**
- * @property[progress] number between 0 and 1. Progress of the task.
- */
-data class WorkerStatus(val progress: Float)

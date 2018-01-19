@@ -31,6 +31,6 @@ class ClassRef(cl: Class<*>): Serializable {
     }
 
     override fun toString(): String {
-        return "ClassRef($classPath/${className.replace('.', '/')})"
+        return "ClassRef(classPath=$classPath, className='$className')"
     }
 }

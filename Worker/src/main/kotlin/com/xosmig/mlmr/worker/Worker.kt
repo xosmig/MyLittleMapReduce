@@ -56,5 +56,5 @@ internal class Worker(registryHost: String, registryPort: Int, val id: WorkerId)
         return 0
     }
 
-    override fun check(): WorkerStatus = WorkerStatus(0.5f)  // TODO
+    override fun healthCheck() {}
 }

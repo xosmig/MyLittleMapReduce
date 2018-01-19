@@ -32,6 +32,9 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     }
 
     override fun workerFinished(id: WorkerId, success: Boolean) {
+        if (success) {
+            println("Worker $id has finished successfully")
+        }
         val workerState = workers[id] ?: TODO()
         synchronized(workerState.lock) {
             workerState.finished = true
@@ -103,7 +106,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
             // periodic health and status checks
             while (true) {
                 val healthy = try {
-                    workerState.workerRmi.check()
+                    workerState.workerRmi.healthCheck()
                     true
                 } catch (e: Throwable) {
                     // task might have finished successfully
@@ -123,7 +126,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 }
 
                 if (!healthy) {
-                    println("Health-check failed for worker $workerId")
+                    println("Health-healthCheck failed for worker $workerId")
                     FileUtils.deleteDirectory(mapOutputDir.toFile())
                     return false
                 }

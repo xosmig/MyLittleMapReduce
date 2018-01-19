@@ -39,7 +39,6 @@ allprojects {
 project(":lib") {
     dependencies {
         compile "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$serialization_version"
-        compile "org.jetbrains.kotlin:kotlin-reflect"
         testCompile "junit:junit:4.12"
         testCompile "com.natpryce:hamkrest:1.4.2.2"
     }
@@ -48,7 +47,6 @@ project(":lib") {
 project(":ApplicationMaster") {
     dependencies {
         compile project(":lib")
-        testCompile "commons-io:commons-io:2.4"
     }
 }
 
@@ -63,6 +61,13 @@ project(":ResourceManager") {
         compile project(":lib")
         compile project(":ApplicationMaster")
         compile project(":Worker")
+        compile "commons-io:commons-io:2.4"
+    }
+}
+
+project(":Examples") {
+    dependencies {
+        compile project(":ApplicationMaster")
         compile "commons-io:commons-io:2.4"
     }
 }

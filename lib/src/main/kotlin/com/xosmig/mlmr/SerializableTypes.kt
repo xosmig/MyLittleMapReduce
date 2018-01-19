@@ -27,11 +27,12 @@ data class SInt(val value: Int) {
         val zero = SInt(0)
         val one = SInt(1)
     }
+
+    override fun toString(): String = value.toString()
+
 }
 
 @Serializable
 data class SString(val value: String) {
-    override fun toString(): String {
-        return value
-    }
+    override fun toString(): String = value
 }
