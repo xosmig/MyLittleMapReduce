@@ -31,7 +31,7 @@ class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
         (MyOwnKeyClass::class, SInt::class, MyOwnKeyClass::class, SInt::class) {
 
     override fun reduce(key: MyOwnKeyClass, values: Sequence<SInt>, context: NodeContext<MyOwnKeyClass, SInt>) {
-        // TODO
+        context.output(key, values.fold(SInt.zero, SInt::plus))
     }
 }
 

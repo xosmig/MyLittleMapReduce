@@ -13,7 +13,7 @@ data class SInt(val value: Int) {
     }
 
     override fun toString(): String = value.toString()
-
+    operator fun plus(other: SInt) = SInt(value + other.value)
 }
 
 @Serializable
