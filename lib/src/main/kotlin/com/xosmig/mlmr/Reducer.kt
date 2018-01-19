@@ -13,7 +13,8 @@ abstract class TypedReducer<IK: Any, IV: Any, OK: Any, OV: Any>(
         okKlass: KClass<OK>, ovKlass: KClass<OV>
 ): Node<OK, OV>(okKlass, ovKlass), Reducer {
 
-    private val serializer = KVPair.getSerializer(ikKlass, ivKlass)
+    private val keySerializer = ikKlass.serializer()
+    private val valueSerializer = ivKlass.serializer()
 
     abstract fun reduce(key: IK, values: Iterable<IV>, context: NodeContext<OK, OV>)
 

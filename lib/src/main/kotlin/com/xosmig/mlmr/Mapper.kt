@@ -1,8 +1,5 @@
 package com.xosmig.mlmr
 
-import kotlinx.serialization.serializer
-import readCBORObject
-import java.io.BufferedInputStream
 import java.io.InputStream
 import kotlin.reflect.KClass
 
@@ -16,23 +13,4 @@ abstract class TypedMapper<OK: Any, OV: Any>(okKlass: KClass<OK>,
     abstract fun map(input: InputStream, context: NodeContext<OK, OV>)
 
     override fun map(input: InputStream, context: Context) = map(input, nodeContext(context))
-}
-
-abstract class KeyValueMapper<IK: Any, IV: Any, OK: Any, OV: Any> (
-        ikKlass: KClass<IK>, ivKlass: KClass<IV>,
-        okKlass: KClass<OK>, ovKlass: KClass<OV>
-): TypedMapper<OK, OV>(okKlass, ovKlass) {
-
-    private val serializer = KVPair.getSerializer(ikKlass, ivKlass)
-
-    abstract fun map(key: IK, value: IV, context: NodeContext<OK, OV>)
-
-    override final fun map(input: InputStream, context: NodeContext<OK, OV>) {
-        BufferedInputStream(input).use { bufferedInput ->
-            while (true) {
-                val kv = bufferedInput.readCBORObject(serializer) ?: break
-                map(kv.key, kv.value, context)
-            }
-        }
-    }
 }

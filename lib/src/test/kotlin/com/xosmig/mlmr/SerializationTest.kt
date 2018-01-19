@@ -22,11 +22,4 @@ class SerializationTest {
         }
         assert.that(decoded, equalTo(obj))
     }
-
-    @Test
-    fun serializeKVPair() {
-        val original = KVPair(SInt(5), SString("hello"))
-        val serializer = KVPair.getSerializer(SInt::class, SString::class)
-        testSerializable(original, serializer)
-    }
 }

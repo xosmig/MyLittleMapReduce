@@ -1,7 +1,6 @@
 package com.xosmig.mlmr.worker
 
 import com.xosmig.mlmr.Context
-import com.xosmig.mlmr.KVPair
 import com.xosmig.mlmr.WorkerId
 import kotlinx.serialization.KSerializer
 import writeCBORObject
