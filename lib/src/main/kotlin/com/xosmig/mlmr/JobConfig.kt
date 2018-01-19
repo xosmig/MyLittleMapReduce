@@ -1,14 +1,32 @@
 package com.xosmig.mlmr
 
 import java.io.Serializable
-import java.nio.file.Path
 
-data class JobConfig(
+class JobConfig private constructor(
         val mapper: Class<out Node<*, *>>,
-        val combiner: Class<out Node<*, *>>? = null,
+        val combiner: Class<out Node<*, *>>?,
         val reducer: Class<out Node<*, *>>,
         val inputDir: String,
-        val outputDir: String)
+        val outputDir: String) {
+
+    companion object {
+
+        fun<K1: Any, V1: Any, K2: Any, V2: Any, K3: Any, V3: Any> create(
+                mapper: Class<out TypedMapper<K1, V1>>,
+                combiner: Class<out TypedReducer<K1, V1, K2, V2>>,
+                reducer: Class<out TypedReducer<K2, V2, K3, V3>>,
+                inputDir: String,
+                outputDir: String
+        ): JobConfig = JobConfig(mapper, combiner, reducer, inputDir, outputDir)
+
+        fun<K1: Any, V1: Any, K3: Any, V3: Any> create(
+                mapper: Class<out TypedMapper<K1, V1>>,
+                reducer: Class<out TypedReducer<K1, V1, K3, V3>>,
+                inputDir: String,
+                outputDir: String
+        ): JobConfig = JobConfig(mapper, null, reducer, inputDir, outputDir)
+    }
+}
 
 class CompiledJobConfig(config: JobConfig): Serializable {
     val mapper = ClassRef(config.mapper)

@@ -15,7 +15,7 @@ data class MyOwnKeyClass(val key: String) {
     override fun toString(): String = key
 }
 
-class WordCountMapper: InputStreamMapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::class) {
+class WordCountMapper: TypedMapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::class) {
     override fun map(input: InputStream, context: NodeContext<MyOwnKeyClass, SInt>) {
         BufferedInputStream(input).use { bufferedInput ->
             Scanner(bufferedInput).use { scanner ->
@@ -27,12 +27,20 @@ class WordCountMapper: InputStreamMapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::cla
     }
 }
 
+class WordCountReducer: TypedReducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
+        (MyOwnKeyClass::class, SInt::class, MyOwnKeyClass::class, SInt::class) {
+
+    override fun reduce(key: MyOwnKeyClass, values: Iterable<SInt>, context: NodeContext<MyOwnKeyClass, SInt>) {
+        TODO()
+    }
+}
+
 class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
     override fun run() {
-        val config = JobConfig(
+        val config = JobConfig.create(
                 WordCountMapper::class.java,
-                WordCountMapper::class.java,
-                WordCountMapper::class.java,
+                WordCountReducer::class.java,
+                WordCountReducer::class.java,
                 "/home/andrey/tmp/mlmr/word_count/input",
                 "/home/andrey/tmp/mlmr/word_count/output"
         )
