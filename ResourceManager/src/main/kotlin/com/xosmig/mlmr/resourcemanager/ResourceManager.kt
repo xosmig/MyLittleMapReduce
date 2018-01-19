@@ -3,8 +3,6 @@ package com.xosmig.mlmr.resourcemanager
 import com.xosmig.mlmr.*
 import com.xosmig.mlmr.applicationmaster.ApplicationMasterRmi
 import com.xosmig.mlmr.applicationmaster.ResourceManagerRmiForApplicationMaster
-import com.xosmig.mlmr.worker.*
-import org.apache.commons.io.FileUtils
 import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 import java.nio.file.Files

@@ -71,7 +71,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
         val workerId = idGenerator.next()
 
-        val mapOutputDir = job.tmpDir.resolve("map.output").resolve("Worker$workerId")
+        val mapOutputDir = job.tmpDir.resolve("map.output")
         val logFile = job.tmpDir.resolve("map.log").resolve("Worker$workerId")
         try {
             Files.createDirectories(mapOutputDir)
@@ -80,7 +80,11 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
             TODO()
         }
 
-        val workerState = WorkerState(job, MapTask(
+        fun deleteWorkerOutput() {
+            TODO()
+        }
+
+        val workerState = WorkerState(MapTask(
                 mapper = job.config.mapper,
                 combiner = job.config.combiner,
                 mapInputPath = inputPath.toString(),
@@ -98,7 +102,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 }
                 if (!workerState.registered) {
                     println("Worker $workerId registration time out")
-                    FileUtils.deleteDirectory(mapOutputDir.toFile())
+                    deleteWorkerOutput()
                     return false
                 }
             }
@@ -120,14 +124,14 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                         return true
                     }
                     if (workerState.finished && workerState.success) {
-                        FileUtils.deleteDirectory(mapOutputDir.toFile())
+                        deleteWorkerOutput()
                         return false
                     }
                 }
 
                 if (!healthy) {
                     println("Health-healthCheck failed for worker $workerId")
-                    FileUtils.deleteDirectory(mapOutputDir.toFile())
+//                    FileUtils.deleteDirectory(mapOutputDir.toFile())
                     return false
                 }
             }
@@ -155,7 +159,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         return startProcess(com.xosmig.mlmr.worker.Main::class.java, processConfig)
     }
 
-    private class WorkerState(val job: JobState, val task: WorkerTask) {
+    private class WorkerState(val task: WorkerTask) {
         var registered = false  // protected by `lock`
         var finished = false    // protected by `lock`
         var success = false     // protected by `lock`
