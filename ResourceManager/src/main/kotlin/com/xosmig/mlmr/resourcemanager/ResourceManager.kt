@@ -45,7 +45,6 @@ internal class ResourceManager(
         // schedule jobs
         while (true) {
             val job = jobQueue.take()
-            assert(job != null)
 
             if (job.mapStageDone) {
                 // TODO: startReduce(job)
@@ -55,7 +54,7 @@ internal class ResourceManager(
         }
     }
 
-    fun startMap(job: JobState) {
+    private fun startMap(job: JobState) {
         val inputFiles = Files.newDirectoryStream(Paths.get(job.config.inputDir)).toList()
         job.completedTasks = CountDownLatch(inputFiles.size)
         for (inputFile in inputFiles) {

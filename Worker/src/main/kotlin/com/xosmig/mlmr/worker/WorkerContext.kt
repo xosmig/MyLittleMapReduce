@@ -22,8 +22,11 @@ class WorkerContext(private val workerId: WorkerId, private val outputDir: Path)
             val hash = key.hashCode()
             val dir = outputDir.resolve(hash.toString())
             Files.createDirectories(dir)
-            val lastIdx = Files.newDirectoryStream(dir).use {
-                it.map { it.fileName.toString().toInt() }.max() ?: -1
+            val lastIdx = Files.newDirectoryStream(dir).use { files ->
+                val regex = Regex("Worker#\\d+_key#(\\d+)")
+                files.mapNotNull { regex.matchEntire(it.fileName.toString()) }
+                        .map { it.groupValues[1].toInt() }
+                        .max() ?: -1
             }
             val filename = "Worker${workerId}_key#${lastIdx + 1}"
             val outs = resourceHolder.addResource(Files.newOutputStream(dir.resolve(filename)))
