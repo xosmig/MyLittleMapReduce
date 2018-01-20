@@ -38,7 +38,7 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
                 logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 using {
                     val input = Files.newInputStream(Paths.get(task.mapInputPath)).autoClose()
-                    val context = WorkerContext(workerId, Paths.get(task.outputDir)).autoClose()
+                    val context = WorkerContext(workerId, Paths.get(task.mapOutputDir)).autoClose()
                     mapper.map(input, context)
                 }
             }
@@ -55,7 +55,7 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
                 }
             }
         }
-        workersManager.workerFinished(workerId, true)
+        workersManager.workerFinished(workerId)
 
         logger.log(INFO, "Successfully finished")
         // Expect resource manager to kill this process within 10 seconds

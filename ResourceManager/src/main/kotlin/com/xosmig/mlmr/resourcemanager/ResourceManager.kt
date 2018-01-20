@@ -3,6 +3,7 @@ package com.xosmig.mlmr.resourcemanager
 import com.xosmig.mlmr.*
 import com.xosmig.mlmr.applicationmaster.ApplicationMasterRmi
 import com.xosmig.mlmr.applicationmaster.ResourceManagerRmiForApplicationMaster
+import com.xosmig.mlmr.util.startThread
 import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 import java.nio.file.Files
@@ -47,7 +48,7 @@ internal class ResourceManager(
             val job = jobQueue.take()
 
             if (job.mapStageDone) {
-                // TODO: startReduce(job)
+                startReduce(job)
             } else {
                 startMap(job)
             }
@@ -56,15 +57,33 @@ internal class ResourceManager(
 
     private fun startMap(job: JobState) {
         val inputFiles = Files.newDirectoryStream(Paths.get(job.config.inputDir)).toList()
-        job.completedTasks = CountDownLatch(inputFiles.size)
+        job.inputSize = inputFiles.size
+        job.runningWorkers = CountDownLatch(job.inputSize)
         for (inputFile in inputFiles) {
             workersManager.startMapWorker(job, inputFile)
         }
-        Thread {
-            job.completedTasks?.await() ?: TODO()  // TODO
+        startThread {
+            job.runningWorkers.await()
             // Map finished. Schedule reduce
             job.mapStageDone = true
             jobQueue.put(job)
-        }.start()
+        }
+    }
+
+    private fun startReduce(job: JobState) {
+        val mapOutputDir = job.tmpDir.resolve("map.output")
+        val inputDirs = Files.newDirectoryStream(mapOutputDir).toList()
+        val reducersCnt = Math.min(job.inputSize, inputDirs.size)
+        job.runningWorkers = CountDownLatch(reducersCnt)
+        if (reducersCnt > 0) {
+            for (reducerInputDirs in inputDirs.chunked(inputDirs.size / reducersCnt)) {
+                workersManager.startReduceWorker(job, reducerInputDirs)
+            }
+        }
+        startThread {
+            job.runningWorkers.await()
+            // Reduce finished. Notify the application master
+            job.applicationMaster.jobComplete(job.id)
+        }
     }
 }

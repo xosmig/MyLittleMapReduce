@@ -13,5 +13,6 @@ internal class JobState(
         val tmpDir: Path) {
 
     var mapStageDone = false
-    var completedTasks: CountDownLatch? = null
+    lateinit var runningWorkers: CountDownLatch
+    /*lateinit*/ var inputSize: Int = -1
 }

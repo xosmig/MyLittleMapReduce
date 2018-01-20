@@ -1,14 +1,19 @@
 package com.xosmig.mlmr.resourcemanager
 
 import com.xosmig.mlmr.WorkerId
+import com.xosmig.mlmr.util.startThread
+import com.xosmig.mlmr.util.withDefer
 import com.xosmig.mlmr.worker.*
 import kotlinx.serialization.json.JSON
-import org.apache.commons.io.FileUtils
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.Paths
+import java.rmi.RemoteException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
 
 internal class WorkersManager(val registryHost: String, val registryPort: Int): WorkersManagerRmi {
     private var workerCounter = 0
@@ -31,113 +36,136 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         }
     }
 
-    override fun workerFinished(id: WorkerId, success: Boolean) {
-        if (success) {
-            println("Worker $id has finished successfully")
-        }
-        val workerState = workers[id] ?: TODO()
-        synchronized(workerState.lock) {
-            workerState.finished = true
-            workerState.success = success
-            workerState.lock.notify()
-        }
+    override fun workerFinished(id: WorkerId) {
+        val workerState = workers[id] ?: return
+        println("Worker $id has finished successfully")
+        workerState.finished.set(true)
     }
 
     /**
      * Blocks until there is a place for a new worker.
      */
-    fun startMapWorker(jobState: JobState, inputFile: Path) {
+    fun startMapWorker(job: JobState, inputFile: Path) {
+        startWorker { runMapWorker(job, inputFile) }
+    }
+
+    /**
+     * Blocks until there is a place for a new worker.
+     */
+    fun startReduceWorker(job: JobState, reduceInputDirs: List<Path>) {
+        startWorker { runReduceWorker(job, reduceInputDirs) }
+    }
+
+    inline private fun startWorker(crossinline run: () -> Unit) {
         getPlaceForNewWorker()
-        Thread {
-            var ok = false
-            for (i in 1..10) {
-                ok = tryRunMapWorker(jobState, inputFile)
-                if (ok) {
+        startThread {
+            var exception: Exception? = null
+            for (i in 1..5) {
+                try {
+                    run()
+                } catch (e: Exception) {
+                    exception = e
+                }
+
+                if (exception == null) {
                     break
                 }
             }
 
-            if (!ok) {
-                TODO()
+            if (exception != null) {
+                throw exception
             }
-        }.start()
+        }
     }
 
-    /**
-     * @return false if failed to complete the task. True otherwise.
-     */
-    private fun tryRunMapWorker(job: JobState, inputPath: Path): Boolean {
-        println("Creating map worker for file: '$inputPath'")
-
+    @Throws(Exception::class)
+    private fun runMapWorker(job: JobState, inputPath: Path) {
         val workerId = idGenerator.next()
+        println("Creating map worker $workerId for file: '$inputPath'")
 
         val mapOutputDir = job.tmpDir.resolve("map.output")
         val logFile = job.tmpDir.resolve("map.log").resolve("Worker$workerId")
-        try {
-            Files.createDirectories(mapOutputDir)
-            Files.createDirectories(logFile.parent)
-        } catch (e: Exception) {
-            TODO()
-        }
+        Files.createDirectories(mapOutputDir)
+        Files.createDirectories(logFile.parent)
 
-        fun deleteWorkerOutput() {
-            TODO()
-        }
-
-        val workerState = WorkerState(MapTask(
+        val workerState = WorkerState(workerId, MapTask(
                 mapper = job.config.mapper,
                 combiner = job.config.combiner,
                 mapInputPath = inputPath.toString(),
-                outputDir = mapOutputDir.toString()
+                mapOutputDir = mapOutputDir.toString()
         ))
 
-        val process = startWorkerProcess(workerId, logFile)
-        workers.put(workerId, workerState)
+        try {
+            runWorker(workerState, logFile)
+        } catch (e: Exception) {
+            // TODO: deleteWorkerOutput()
+        }
+
+        job.runningWorkers.countDown()
+    }
+
+    @Throws(Exception::class)
+    private fun runReduceWorker(job: JobState, reduceInputDirs: List<Path>) {
+        val workerId = idGenerator.next()
+        println("Creating reduce worker $workerId")
+
+        val outputDir = Paths.get(job.config.outputDir)
+        val logFile = job.tmpDir.resolve("reduce.log").resolve("Worker$workerId")
+        Files.createDirectories(logFile.parent)
+
+        val workerState = WorkerState(workerId, ReduceTask(
+                reducer = job.config.reducer,
+                reduceInputDirs = reduceInputDirs.map { it.toString() }.toTypedArray(),
+                outputDir = outputDir.toString()
+        ))
 
         try {
-            synchronized(workerState.lock) {
-                println("Waiting for worker $workerId to register...")
-                if (!workerState.registered) {
-                    workerState.lock.wait(WORKER_REGISTRATION_TIMEOUT)
-                }
-                if (!workerState.registered) {
-                    println("Worker $workerId registration time out")
-                    deleteWorkerOutput()
-                    return false
-                }
-            }
+            runWorker(workerState, logFile)
+        } catch (e: Exception) {
+            // TODO: deleteWorkerOutput()
+        }
 
-            // periodic health and status checks
-            while (true) {
-                val healthy = try {
-                    workerState.workerRmi.healthCheck()
-                    true
-                } catch (e: Throwable) {
-                    // task might have finished successfully
-                    false
-                }
+        job.runningWorkers.countDown()
+    }
 
-                synchronized(workerState.lock) {
-                    workerState.lock.wait(300)
-                    if (workerState.finished && workerState.success) {
-                        job.completedTasks!!.countDown()
-                        return true
-                    }
-                    if (workerState.finished && workerState.success) {
-                        deleteWorkerOutput()
-                        return false
-                    }
-                }
-
-                if (!healthy) {
-                    println("Health-healthCheck failed for worker $workerId")
-//                    FileUtils.deleteDirectory(mapOutputDir.toFile())
-                    return false
-                }
-            }
-        } finally {
-            workers.remove(workerId)
+    @Throws(Exception::class)
+    private fun runWorker(workerState: WorkerState, logFile: Path) = withDefer {
+        workers.put(workerState.id, workerState)
+        defer { workers.remove(workerState.id) }
+        val process = startWorkerProcess(workerState.id, logFile)
+        defer {
             process.destroy()
+            process.waitFor()
+        }
+
+        waitForRegistration(workerState)
+        waitForWorker(workerState)
+    }
+
+    @Throws(TimeoutException::class)
+    private fun waitForRegistration(workerState: WorkerState) {
+        synchronized(workerState.lock) {
+            println("Waiting for worker ${workerState.id} to register...")
+            if (!workerState.registered) {
+                workerState.lock.wait(WORKER_REGISTRATION_TIMEOUT)
+            }
+            if (!workerState.registered) {
+                println("Worker ${workerState.id} registration time out")
+                throw TimeoutException()
+            }
+        }
+    }
+
+    @Throws(RemoteException::class)
+    private fun waitForWorker(workerState: WorkerState) {
+        // periodic health and status checks
+        while (true) {
+            workerState.workerRmi.healthCheck()
+
+            Thread.sleep(400)
+            if (workerState.finished.get()) {
+                return
+            }
         }
     }
 
@@ -159,10 +187,9 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         return startProcess(com.xosmig.mlmr.worker.Main::class.java, processConfig)
     }
 
-    private class WorkerState(val task: WorkerTask) {
+    private class WorkerState(val id: WorkerId, val task: WorkerTask) {
         var registered = false  // protected by `lock`
-        var finished = false    // protected by `lock`
-        var success = false     // protected by `lock`
+        val finished = AtomicBoolean(false)
         val lock = Object()
         lateinit var workerRmi: WorkerRmi
     }

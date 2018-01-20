@@ -1,6 +1,7 @@
 package com.xosmig.mlmr.util
 
 import java.io.Closeable
+import java.io.IOException
 
 class ResourceHolder: Closeable {
     private val resources = ArrayList<Closeable>(1)
@@ -18,7 +19,7 @@ class ResourceHolder: Closeable {
     }
 
     @Synchronized
-    @Throws(Exception::class)
+    @Throws(IOException::class)
     override fun close() {
         var exception: Exception? = null
         for (i in resources.size - 1 downTo 0) {
@@ -41,7 +42,7 @@ class ResourceHolder: Closeable {
     }
 }
 
-fun<R> using(block: ResourceHolder.() -> R): R {
+inline fun<R> using(block: ResourceHolder.() -> R): R {
     ResourceHolder().use {
         return it.block()
     }

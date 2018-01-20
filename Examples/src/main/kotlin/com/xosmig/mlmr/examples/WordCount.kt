@@ -9,6 +9,7 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.InputStream
 import java.util.*
+import kotlin.system.exitProcess
 
 @Serializable
 data class MyOwnKeyClass(val key: String) {
@@ -45,9 +46,17 @@ class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
                 "/home/andrey/tmp/mlmr/word_count/output"
         )
         val id = startJob(config)
+
+        // FIXME
         while (true) {
             Thread.sleep(Long.MAX_VALUE)
         }
+    }
+
+    override fun jobComplete(id: JobId) {
+        // FIXME
+        println("Success")
+        exitProcess(0)
     }
 }
 

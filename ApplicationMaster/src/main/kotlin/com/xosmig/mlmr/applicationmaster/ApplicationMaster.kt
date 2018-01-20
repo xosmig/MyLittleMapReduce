@@ -14,8 +14,4 @@ abstract class ApplicationMaster(registryHost: String?, registryPort: Int): Appl
     fun startJob(config: JobConfig): JobId {
         return resourceManager.startJob(stub, CompiledJobConfig(config))
     }
-
-    override final fun jobComplete(id: JobId) {
-        // TODO
-    }
 }
