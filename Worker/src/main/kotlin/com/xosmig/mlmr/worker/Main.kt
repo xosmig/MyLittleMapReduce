@@ -41,6 +41,7 @@ object Main {
             exitProcess(workerClass.run())
         } catch (e: Throwable) {
             logger.log(Level.SEVERE, "", e)
+            throw e
         }
     }
 }

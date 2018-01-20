@@ -35,10 +35,3 @@ class CompiledJobConfig(config: JobConfig): Serializable {
     val inputDir = config.inputDir
     val outputDir = config.outputDir
 }
-
-class ReduceConfig(config: CompiledJobConfig): Serializable {
-    val reducer = config.reducer
-    val outputDir = config.outputDir
-    // TODO?: inputDir?
-}
-

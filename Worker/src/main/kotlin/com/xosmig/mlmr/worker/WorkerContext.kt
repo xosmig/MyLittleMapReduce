@@ -2,6 +2,7 @@ package com.xosmig.mlmr.worker
 
 import com.xosmig.mlmr.Context
 import com.xosmig.mlmr.WorkerId
+import com.xosmig.mlmr.util.ResourceHolder
 import kotlinx.serialization.KSerializer
 import writeCBORObject
 import java.io.Closeable
@@ -12,7 +13,7 @@ import java.nio.file.Path
 
 class WorkerContext(private val workerId: WorkerId, private val outputDir: Path): Context, Closeable {
     private val outputStreams = HashMap<Any, OutputStream>()
-    private val resourceManager = ResourceManager()
+    private val resourceHolder = ResourceHolder()
 
     @Synchronized
     override fun <K: Any, V: Any> output(key: K, value: V,
@@ -25,7 +26,7 @@ class WorkerContext(private val workerId: WorkerId, private val outputDir: Path)
                 it.map { it.fileName.toString().toInt() }.max() ?: -1
             }
             val filename = "Worker${workerId}_key#${lastIdx + 1}"
-            val outs = resourceManager.addResource(Files.newOutputStream(dir.resolve(filename)))
+            val outs = resourceHolder.addResource(Files.newOutputStream(dir.resolve(filename)))
             outs.writeCBORObject(key, keySerializer)
             return@getOrPut outs
         }
@@ -33,5 +34,5 @@ class WorkerContext(private val workerId: WorkerId, private val outputDir: Path)
     }
 
     @Throws(IOException::class)
-    override fun close() = resourceManager.close()
+    override fun close() = resourceHolder.close()
 }

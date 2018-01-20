@@ -1,8 +1,8 @@
-package com.xosmig.mlmr.worker
+package com.xosmig.mlmr.util
 
 import java.io.Closeable
 
-class ResourceManager: Closeable {
+class ResourceHolder: Closeable {
     private val resources = ArrayList<Closeable>(1)
 
     fun <T: Closeable?> T.autoClose(): T = addResource(this)
@@ -41,8 +41,8 @@ class ResourceManager: Closeable {
     }
 }
 
-fun<R> using(block: ResourceManager.() -> R): R {
-    ResourceManager().use {
+fun<R> using(block: ResourceHolder.() -> R): R {
+    ResourceHolder().use {
         return it.block()
     }
 }

@@ -5,6 +5,7 @@ import com.xosmig.mlmr.WorkerId
 import java.io.Serializable
 import java.rmi.Remote
 import java.rmi.RemoteException
+import java.util.*
 
 interface WorkersManagerRmi: Remote {
     /**
@@ -34,6 +35,29 @@ data class MapTask(val mapper: ClassRef,
                    val mapInputPath: String,
                    override val outputDir: String): WorkerTask(), Serializable
 
-data class ReduceTask(val reducer: ClassRef,
-                      val reduceInputDir: String,
-                      override val outputDir: String): WorkerTask(), Serializable
+class ReduceTask(val reducer: ClassRef,
+                 val reduceInputDirs: Array<String>,
+                 override val outputDir: String): WorkerTask(), Serializable {
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is ReduceTask) return false
+
+        if (reducer != other.reducer) return false
+        if (!Arrays.equals(reduceInputDirs, other.reduceInputDirs)) return false
+        if (outputDir != other.outputDir) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = reducer.hashCode()
+        result = 31 * result + Arrays.hashCode(reduceInputDirs)
+        result = 31 * result + outputDir.hashCode()
+        return result
+    }
+
+    override fun toString(): String {
+        return "ReduceTask(reducer=$reducer, reduceInputDirs=${Arrays.toString(reduceInputDirs)}, outputDir='$outputDir')"
+    }
+}

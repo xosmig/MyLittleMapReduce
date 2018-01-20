@@ -1,13 +1,13 @@
 package com.xosmig.mlmr.worker
 
 import com.xosmig.mlmr.*
+import com.xosmig.mlmr.util.using
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.rmi.registry.LocateRegistry
 import java.rmi.server.UnicastRemoteObject
 import java.util.concurrent.TimeUnit
-import java.util.logging.Level.INFO
-import java.util.logging.Level.WARNING
+import java.util.logging.Level.*
 import java.util.logging.Logger
 
 internal class Worker(registryHost: String, registryPort: Int, val workerId: WorkerId): WorkerRmi {
@@ -36,14 +36,23 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
             is MapTask -> {
                 val mapper = task.mapper.load().newInstance() as Mapper<*, *>
                 logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
-                Files.newInputStream(Paths.get(task.mapInputPath)).use { input ->
-                    WorkerContext(workerId, Paths.get(task.outputDir)).use { context ->
-                        mapper.map(input, context)
-                    }
+                using {
+                    val input = Files.newInputStream(Paths.get(task.mapInputPath)).autoClose()
+                    val context = WorkerContext(workerId, Paths.get(task.outputDir)).autoClose()
+                    mapper.map(input, context)
                 }
             }
             is ReduceTask -> {
-                // TODO: doReduce(task)
+                val reducer = task.reducer.load().newInstance() as Reducer<*, *, *, *>
+                for (dir in task.reduceInputDirs) {
+                    logger.log(FINE, "Starting reduce task for directory '$dir'")
+                    using {
+                        val files = Files.newDirectoryStream(Paths.get(dir)).autoClose()
+                        val context = WorkerContext(workerId, Paths.get(task.outputDir)).autoClose()
+                        val inputStreams = files.map { Files.newInputStream(it).autoClose() }
+                        reducer.reduce(inputStreams, context)
+                    }
+                }
             }
         }
         workersManager.workerFinished(workerId, true)
