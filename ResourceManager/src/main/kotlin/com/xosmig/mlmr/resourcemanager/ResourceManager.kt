@@ -10,6 +10,9 @@ import java.nio.file.Files
 import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
+import java.util.logging.Level.INFO
+import java.util.logging.Level.WARNING
+import java.util.logging.Logger
 
 class ResourceManager(
         private val thisHost: String,
@@ -21,10 +24,9 @@ class ResourceManager(
     private val workersManager = WorkersManager(thisHost, registryPort)
 
     override fun startJob(applicationMasterStub: ApplicationMasterRmi, config: CompiledJobConfig): JobId {
+        val id = jobIdGenerator.next()
         try {
-            val id = jobIdGenerator.next()
-            println("Got a job: jobId=$id")
-
+            LOGGER.log(INFO, "Got a job: jobId=$id")
             val outputDir = Paths.get(config.outputDir)
             Files.createDirectory(outputDir)
 
@@ -33,8 +35,9 @@ class ResourceManager(
 
             jobQueue.add(JobState(applicationMasterStub, config, id, tmpDir))
             return id
-        } catch (e: Exception) {
-            throw e // all exception are handled by the ApplicationMaster
+        } catch (ex: Exception) {
+            LOGGER.log(WARNING, "Failed to start job $id", ex)
+            throw ex // All exception should be handled by the ApplicationMaster
         }
     }
 
@@ -83,5 +86,9 @@ class ResourceManager(
             // Reduce finished. Notify the application master
             job.applicationMaster.jobComplete(job.id)
         }
+    }
+
+    companion object {
+        private val LOGGER = Logger.getLogger(ResourceManager::class.java.name)
     }
 }

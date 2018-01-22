@@ -18,6 +18,8 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.logging.Level.*
+import java.util.logging.Logger
 
 internal class WorkersManager(val registryHost: String, val registryPort: Int): WorkersManagerRmi {
     private var workerCounter = 0
@@ -28,21 +30,21 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     private val workers = ConcurrentHashMap<WorkerId, WorkerState>()
 
     override fun registerWorker(id: WorkerId, workerRmi: WorkerRmi): WorkerTask? {
-        println("Worker $id is here for registration")
+        LOGGER.log(FINE, "Worker $id is here for registration")
         val workerState = workers[id] ?: return null
         synchronized(workerState.lock) {
             // note that the worker might have already been destroyed
             workerState.registered = true
             workerState.workerRmi = workerRmi
             workerState.lock.notify()
-            println("Worker $id has been registered")
+            LOGGER.log(FINE, "Worker $id has been registered")
             return workerState.task
         }
     }
 
     override fun workerFinished(id: WorkerId) {
         val workerState = workers[id] ?: return
-        println("Worker $id has finished successfully")
+        LOGGER.log(FINE, "Worker $id has finished successfully")
         workerState.finished.set(true)
     }
 
@@ -68,8 +70,8 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 for (i in 1..5) {
                     try {
                         run()
-                    } catch (e: Exception) {
-                        exception = e
+                    } catch (ex: Exception) {
+                        exception = ex
                     }
 
                     if (exception == null) {
@@ -78,7 +80,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 }
 
                 if (exception != null) {
-                    println("A worker for job${job.id} has failed")
+                    LOGGER.log(WARNING, "Job${job.id} failed")
                     job.applicationMaster.jobFailed(job.id)
                 }
             } finally {
@@ -90,7 +92,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     @Throws(Exception::class)
     private fun runMapWorker(job: JobState, inputPath: Path) {
         val workerId = idGenerator.next()
-        println("Creating map worker $workerId for file: '$inputPath'")
+        LOGGER.log(FINE, "Creating map worker $workerId for file: '$inputPath'")
 
         val mapOutputDir = job.tmpDir.resolve("map.output")
         Files.createDirectories(mapOutputDir)
@@ -107,16 +109,17 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
             runWorker(workerState, logFile)
             job.runningWorkers.countDown()
-        } catch (e: Exception) {
+        } catch (ex: Exception) {
+            LOGGER.log(WARNING, "Map worker $workerId failed", ex)
             deleteWorkerOutput(workerId, mapOutputDir)
-            throw e
+            throw ex
         }
     }
 
     @Throws(Exception::class)
     private fun runReduceWorker(job: JobState, reduceInputDir: Path) {
         val workerId = idGenerator.next()
-        println("Creating reduce worker $workerId for dir '$reduceInputDir'")
+        LOGGER.log(FINE, "Creating reduce worker $workerId for dir '$reduceInputDir'")
 
         val outputDir = Paths.get(job.config.outputDir)
         try {
@@ -131,9 +134,10 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
             runWorker(workerState, logFile)
             job.runningWorkers.countDown()
-        } catch (e: Exception) {
-             deleteWorkerOutput(workerId, outputDir)
-            throw e
+        } catch (ex: Exception) {
+            LOGGER.log(WARNING, "Reduce worker $workerId failed", ex)
+            deleteWorkerOutput(workerId, outputDir)
+            throw ex
         }
     }
 
@@ -162,7 +166,9 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         val process = startWorkerProcess(workerState.id, logFile)
         defer {
             process.destroy()
+            LOGGER.log(FINER, "Waiting for process of worker${workerState.id} to finish ...")
             process.waitFor()
+            LOGGER.log(FINER, "Process of worker${workerState.id} has finished")
         }
 
         waitForRegistration(workerState)
@@ -172,12 +178,12 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     @Throws(TimeoutException::class)
     private fun waitForRegistration(workerState: WorkerState) {
         synchronized(workerState.lock) {
-            println("Waiting for worker ${workerState.id} to register...")
+            LOGGER.log(FINE, "Waiting for worker ${workerState.id} to register...")
             if (!workerState.registered) {
                 workerState.lock.wait(WORKER_REGISTRATION_TIMEOUT)
             }
             if (!workerState.registered) {
-                println("Worker ${workerState.id} registration time out")
+                LOGGER.log(WARNING, "Worker ${workerState.id} registration time out")
                 throw TimeoutException()
             }
         }
@@ -199,7 +205,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     private fun getPlaceForNewWorker() {
         synchronized(workerCounterLock) {
             while (workerCounter == maxWorkerCnt) {
-                println("Waiting for a place for a new worker...")
+                LOGGER.log(FINE, "Waiting for a place for a new worker...")
                 workerCounterLock.wait()
             }
             workerCounter += 1
@@ -216,7 +222,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
     @Throws(IOException::class)
     private fun startWorkerProcess(id: WorkerId, logFile: Path): Process {
-        println("Starting worker$id process ...")
+        LOGGER.log(FINE, "Starting worker$id process ...")
         // arguments passed as a json string to the only CLI parameter of the new process
         val processConfig = JSON.stringify(WorkerProcessConfig(registryHost, registryPort, id, logFile.toString()))
         return startProcess(com.xosmig.mlmr.worker.Main.javaClass, processConfig)
@@ -231,5 +237,6 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
     companion object {
         val WORKER_REGISTRATION_TIMEOUT = TimeUnit.SECONDS.toMillis(5)
+        private val LOGGER = Logger.getLogger(WorkersManager::class.java.name)
     }
 }

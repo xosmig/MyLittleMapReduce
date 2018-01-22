@@ -20,7 +20,6 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
         workersManager = registry.lookup(WM_REGISTRY_KEY) as WorkersManagerRmi
     }
 
-    private val logger = Logger.getLogger(Worker::class.java.name)
     private val stub by lazy { UnicastRemoteObject.exportObject(this, 0) as WorkerRmi }
 
     fun run(): Int {
@@ -30,12 +29,12 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
             System.err.println("The task is not found")
             return 3
         }
-        logger.log(INFO, "Registered")
+        LOGGER.log(INFO, "Registered")
 
         when (task) {
             is MapTask -> {
                 val mapper = task.mapper.load().newInstance() as Mapper<*, *>
-                logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
+                LOGGER.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 using {
                     val input = Files.newInputStream(Paths.get(task.mapInputPath)).autoClose()
                     val context = WorkerContext(workerId, Paths.get(task.mapOutputDir), task.groupCnt,
@@ -45,7 +44,7 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
             }
             is ReduceTask -> {
                 val reducer = task.reducer.load().newInstance() as Reducer<*, *, *, *>
-                logger.log(FINE, "Starting reduce task for directory '${task.reduceInputDir}'")
+                LOGGER.log(FINE, "Starting reduce task for directory '${task.reduceInputDir}'")
                 using {
                     val files = Files.newDirectoryStream(Paths.get(task.reduceInputDir)).autoClose()
                     val inputStreams = files.map { Files.newInputStream(it).autoClose() }
@@ -57,13 +56,17 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
         }
         workersManager.workerFinished(workerId)
 
-        logger.log(INFO, "Successfully finished")
+        LOGGER.log(INFO, "Successfully finished")
         // Expect resource manager to kill this process within 10 seconds
         Thread.sleep(TimeUnit.SECONDS.toMillis(10))
 
-        logger.log(WARNING, "Seems that resource manager has failed to kill this process")
+        LOGGER.log(WARNING, "Seems that resource manager has failed to kill this process")
         return 0
     }
 
     override fun healthCheck() {}
+
+    companion object {
+        private val LOGGER = Logger.getLogger(Worker::class.java.name)
+    }
 }
