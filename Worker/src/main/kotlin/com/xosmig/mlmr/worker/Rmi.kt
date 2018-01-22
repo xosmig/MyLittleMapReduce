@@ -31,8 +31,9 @@ sealed class WorkerTask: Serializable
 data class MapTask(val mapper: ClassRef,
                    val combiner: ClassRef?,
                    val mapInputPath: String,
-                   val mapOutputDir: String): WorkerTask(), Serializable
+                   val mapOutputDir: String,
+                   val groupCnt: Int): WorkerTask(), Serializable
 
 class ReduceTask(val reducer: ClassRef,
-                 val reduceInputDirs: Array<String>,
+                 val reduceInputDir: String,
                  val outputDir: String): WorkerTask(), Serializable

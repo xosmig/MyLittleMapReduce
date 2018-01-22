@@ -11,24 +11,26 @@ import java.io.OutputStream
 import java.nio.file.Files
 import java.nio.file.Path
 
-class WorkerContext(private val workerId: WorkerId, private val outputDir: Path): Context, Closeable {
+class WorkerContext(private val workerId: WorkerId,
+                    private val outputDir: Path,
+                    private val groupCnt: Int): Context, Closeable {
     private val outputStreams = HashMap<Any, OutputStream>()
     private val resourceHolder = ResourceHolder()
+    private var nextKeyIdx = 1
 
     @Synchronized
     override fun <K: Any, V: Any> output(key: K, value: V,
-                                         keySerializer: KSerializer<K>, valueSerializer: KSerializer<V>) {
+                                         keySerializer: KSerializer<K>,
+                                         valueSerializer: KSerializer<V>) {
         val outs = outputStreams.getOrPut(key) {
-            val hash = key.hashCode()
-            val dir = outputDir.resolve(hash.toString())
-            Files.createDirectories(dir)
-            val lastIdx = Files.newDirectoryStream(dir).use { files ->
-                val regex = Regex("Worker#\\d+_key#(\\d+)")
-                files.mapNotNull { regex.matchEntire(it.fileName.toString()) }
-                        .map { it.groupValues[1].toInt() }
-                        .max() ?: -1
+            val dir = if (groupCnt != 0) {
+                val group = Math.floorMod(key.hashCode(), groupCnt)
+                outputDir.resolve(group.toString()).apply { Files.createDirectories(this) }
+            } else {
+                outputDir
             }
-            val filename = "Worker${workerId}_key#${lastIdx + 1}"
+            val filename = "Worker${workerId}_key#$nextKeyIdx"
+            nextKeyIdx += 1
             val outs = resourceHolder.addResource(Files.newOutputStream(dir.resolve(filename)))
             outs.writeCBORObject(key, keySerializer)
             return@getOrPut outs

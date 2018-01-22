@@ -5,6 +5,9 @@ import com.xosmig.mlmr.util.startThread
 import com.xosmig.mlmr.util.withDefer
 import com.xosmig.mlmr.worker.*
 import kotlinx.serialization.json.JSON
+import org.apache.commons.io.FileUtils
+import org.apache.commons.io.filefilter.IOFileFilter
+import java.io.File
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -46,34 +49,39 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
      * Blocks until there is a place for a new worker.
      */
     fun startMapWorker(job: JobState, inputFile: Path) {
-        startWorker { runMapWorker(job, inputFile) }
+        startWorker(job) { runMapWorker(job, inputFile) }
     }
 
     /**
      * Blocks until there is a place for a new worker.
      */
-    fun startReduceWorker(job: JobState, reduceInputDirs: List<Path>) {
-        startWorker { runReduceWorker(job, reduceInputDirs) }
+    fun startReduceWorker(job: JobState, reduceInputDir: Path) {
+        startWorker(job) { runReduceWorker(job, reduceInputDir) }
     }
 
-    inline private fun startWorker(crossinline run: () -> Unit) {
+    inline private fun startWorker(job: JobState, crossinline run: () -> Unit) {
         getPlaceForNewWorker()
         startThread {
-            var exception: Exception? = null
-            for (i in 1..5) {
-                try {
-                    run()
-                } catch (e: Exception) {
-                    exception = e
+            try {
+                var exception: Exception? = null
+                for (i in 1..5) {
+                    try {
+                        run()
+                    } catch (e: Exception) {
+                        exception = e
+                    }
+
+                    if (exception == null) {
+                        break
+                    }
                 }
 
-                if (exception == null) {
-                    break
+                if (exception != null) {
+                    println("A worker for job${job.id} has failed")
+                    job.applicationMaster.jobFailed(job.id)
                 }
-            }
-
-            if (exception != null) {
-                throw exception
+            } finally {
+                releasePlaceForWorker()
             }
         }
     }
@@ -84,48 +92,67 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         println("Creating map worker $workerId for file: '$inputPath'")
 
         val mapOutputDir = job.tmpDir.resolve("map.output")
-        val logFile = job.tmpDir.resolve("map.log").resolve("Worker$workerId")
-        Files.createDirectories(mapOutputDir)
-        Files.createDirectories(logFile.parent)
-
-        val workerState = WorkerState(workerId, MapTask(
-                mapper = job.config.mapper,
-                combiner = job.config.combiner,
-                mapInputPath = inputPath.toString(),
-                mapOutputDir = mapOutputDir.toString()
-        ))
-
         try {
-            runWorker(workerState, logFile)
-        } catch (e: Exception) {
-            // TODO: deleteWorkerOutput()
-        }
+            val logFile = job.tmpDir.resolve("map.log").resolve("Worker$workerId")
+            Files.createDirectories(mapOutputDir)
+            Files.createDirectories(logFile.parent)
 
-        job.runningWorkers.countDown()
+            val workerState = WorkerState(workerId, MapTask(
+                    mapper = job.config.mapper,
+                    combiner = job.config.combiner,
+                    mapInputPath = inputPath.toString(),
+                    mapOutputDir = mapOutputDir.toString(),
+                    groupCnt = job.inputSize
+            ))
+
+            runWorker(workerState, logFile)
+            job.runningWorkers.countDown()
+        } catch (e: Exception) {
+            deleteWorkerOutput(workerId, mapOutputDir)
+            throw e
+        }
     }
 
     @Throws(Exception::class)
-    private fun runReduceWorker(job: JobState, reduceInputDirs: List<Path>) {
+    private fun runReduceWorker(job: JobState, reduceInputDir: Path) {
         val workerId = idGenerator.next()
-        println("Creating reduce worker $workerId")
+        println("Creating reduce worker $workerId for dir '$reduceInputDir'")
 
         val outputDir = Paths.get(job.config.outputDir)
-        val logFile = job.tmpDir.resolve("reduce.log").resolve("Worker$workerId")
-        Files.createDirectories(logFile.parent)
-
-        val workerState = WorkerState(workerId, ReduceTask(
-                reducer = job.config.reducer,
-                reduceInputDirs = reduceInputDirs.map { it.toString() }.toTypedArray(),
-                outputDir = outputDir.toString()
-        ))
-
         try {
-            runWorker(workerState, logFile)
-        } catch (e: Exception) {
-            // TODO: deleteWorkerOutput()
-        }
+            val logFile = job.tmpDir.resolve("reduce.log").resolve("Worker$workerId")
+            Files.createDirectories(logFile.parent)
 
-        job.runningWorkers.countDown()
+            val workerState = WorkerState(workerId, ReduceTask(
+                    reducer = job.config.reducer,
+                    reduceInputDir = reduceInputDir.toString(),
+                    outputDir = outputDir.toString()
+            ))
+
+            runWorker(workerState, logFile)
+            job.runningWorkers.countDown()
+        } catch (e: Exception) {
+             deleteWorkerOutput(workerId, outputDir)
+            throw e
+        }
+    }
+
+    @Throws(IOException::class)
+    private fun deleteWorkerOutput(workerId: WorkerId, outputDir: Path) {
+        val pattern = "Worker$workerId"
+        val fileFilter = object: IOFileFilter {
+            override fun accept(file: File): Boolean = file.name.contains(pattern)
+            override fun accept(dir: File?, name: String): Boolean = name.contains(pattern)
+        }
+        // Filter out log directories
+        val directoryFilter = object: IOFileFilter {
+            override fun accept(file: File): Boolean = !file.name.contains("log")
+            override fun accept(dir: File?, name: String): Boolean = !name.contains("log")
+        }
+        val fileIter = FileUtils.iterateFiles(outputDir.toFile(), fileFilter, directoryFilter)
+        for (file in fileIter) {
+            file.delete()
+        }
     }
 
     @Throws(Exception::class)
@@ -176,6 +203,14 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
                 workerCounterLock.wait()
             }
             workerCounter += 1
+        }
+    }
+
+    private fun releasePlaceForWorker() {
+        synchronized(workerCounterLock) {
+            workerCounter -= 1
+            assert(workerCounter >= 0)
+            workerCounterLock.notify()
         }
     }
 

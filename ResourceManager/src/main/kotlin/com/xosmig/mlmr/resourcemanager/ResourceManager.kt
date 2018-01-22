@@ -73,12 +73,9 @@ internal class ResourceManager(
     private fun startReduce(job: JobState) {
         val mapOutputDir = job.tmpDir.resolve("map.output")
         val inputDirs = Files.newDirectoryStream(mapOutputDir).toList()
-        val reducersCnt = Math.min(job.inputSize, inputDirs.size)
-        job.runningWorkers = CountDownLatch(reducersCnt)
-        if (reducersCnt > 0) {
-            for (reducerInputDirs in inputDirs.chunked(inputDirs.size / reducersCnt)) {
-                workersManager.startReduceWorker(job, reducerInputDirs)
-            }
+        job.runningWorkers = CountDownLatch(inputDirs.size)
+        for (dir in inputDirs) {
+            workersManager.startReduceWorker(job, dir)
         }
         startThread {
             job.runningWorkers.await()

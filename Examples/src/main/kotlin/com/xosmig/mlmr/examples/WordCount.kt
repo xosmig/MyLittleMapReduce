@@ -9,7 +9,9 @@ import java.io.BufferedInputStream
 import java.io.File
 import java.io.InputStream
 import java.util.*
+import java.util.concurrent.CountDownLatch
 import kotlin.system.exitProcess
+
 
 @Serializable
 data class MyOwnKeyClass(val key: String) {
@@ -29,7 +31,7 @@ class WordCountMapper: Mapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::c
 }
 
 class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
-        (MyOwnKeyClass::class, SInt::class, MyOwnKeyClass::class, SInt::class) {
+(MyOwnKeyClass::class, SInt::class, MyOwnKeyClass::class, SInt::class) {
 
     override fun reduce(key: MyOwnKeyClass, values: Sequence<SInt>, context: NodeContext<MyOwnKeyClass, SInt>) {
         context.output(key, values.fold(SInt.zero, SInt::plus))
@@ -37,6 +39,9 @@ class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
 }
 
 class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
+    private val jobComplete = CountDownLatch(1)
+    private var success = false
+
     override fun run() {
         val config = JobConfig.create(
                 WordCountMapper::class.java,
@@ -47,20 +52,28 @@ class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
         )
         val id = startJob(config)
 
-        // FIXME
-        while (true) {
-            Thread.sleep(Long.MAX_VALUE)
+        jobComplete.await()
+        if (success) {
+            println("Success")
+            exitProcess(0)
+        } else {
+            println("Fail")
+            exitProcess(3)
         }
     }
 
     override fun jobComplete(id: JobId) {
-        // FIXME
-        println("Success")
-        exitProcess(0)
+        success = true
+        jobComplete.countDown()
+    }
+
+    override fun jobFailed(id: JobId) {
+        success = false
+        jobComplete.countDown()
     }
 }
 
 fun main(args: Array<String>) {
     FileUtils.deleteDirectory(File("/home/andrey/tmp/mlmr/word_count/output"))
-    com.xosmig.mlmr.examples.WordCountApp().run()
+    WordCountApp().run()
 }

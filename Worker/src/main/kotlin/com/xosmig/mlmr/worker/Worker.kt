@@ -38,20 +38,18 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
                 logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 using {
                     val input = Files.newInputStream(Paths.get(task.mapInputPath)).autoClose()
-                    val context = WorkerContext(workerId, Paths.get(task.mapOutputDir)).autoClose()
+                    val context = WorkerContext(workerId, Paths.get(task.mapOutputDir), task.groupCnt).autoClose()
                     mapper.map(input, context)
                 }
             }
             is ReduceTask -> {
                 val reducer = task.reducer.load().newInstance() as Reducer<*, *, *, *>
-                for (dir in task.reduceInputDirs) {
-                    logger.log(FINE, "Starting reduce task for directory '$dir'")
-                    using {
-                        val files = Files.newDirectoryStream(Paths.get(dir)).autoClose()
-                        val context = WorkerContext(workerId, Paths.get(task.outputDir)).autoClose()
-                        val inputStreams = files.map { Files.newInputStream(it).autoClose() }
-                        reducer.reduce(inputStreams, context)
-                    }
+                logger.log(FINE, "Starting reduce task for directory '${task.reduceInputDir}'")
+                using {
+                    val files = Files.newDirectoryStream(Paths.get(task.reduceInputDir)).autoClose()
+                    val inputStreams = files.map { Files.newInputStream(it).autoClose() }
+                    val context = WorkerContext(workerId, Paths.get(task.outputDir), groupCnt = 0).autoClose()
+                    reducer.reduce(inputStreams, context)
                 }
             }
         }
