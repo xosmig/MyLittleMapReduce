@@ -100,7 +100,6 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
             val workerState = WorkerState(workerId, MapTask(
                     mapper = job.config.mapper,
-                    combiner = job.config.combiner,
                     mapInputPath = inputPath.toString(),
                     mapOutputDir = mapOutputDir.toString(),
                     groupCnt = job.inputSize

@@ -29,7 +29,6 @@ interface WorkerRmi : Remote {
 sealed class WorkerTask: Serializable
 
 data class MapTask(val mapper: ClassRef,
-                   val combiner: ClassRef?,
                    val mapInputPath: String,
                    val mapOutputDir: String,
                    val groupCnt: Int): WorkerTask(), Serializable

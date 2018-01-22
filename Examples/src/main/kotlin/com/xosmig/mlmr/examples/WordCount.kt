@@ -50,7 +50,6 @@ class WordCountApp(private val inputDir: Path,
         val config = JobConfig.create(
                 WordCountMapper::class.java,
                 WordCountReducer::class.java,
-                WordCountReducer::class.java,
                 inputDir.toString(),
                 outputDir.toString()
         )
