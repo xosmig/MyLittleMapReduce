@@ -4,13 +4,15 @@ import com.natpryce.hamkrest.assertion.assert
 import com.natpryce.hamkrest.equalTo
 import com.xosmig.mlmr.util.startProcess
 import com.xosmig.mlmr.util.startThread
+import org.apache.commons.io.FileUtils
 import org.junit.Test
 import java.io.*
 
 
 const val INPUT_DIR = "src/main/resources/WordCount/input"
-const val OUTPUT_DIR_1 = "test-output/WordCount1"
-const val OUTPUT_DIR_2 = "test-output/WordCount2"
+const val OUTPUT_DIR_1 = "WordCount/test-output/WordCount1"
+const val OUTPUT_DIR_2 = "WordCount/test-output/WordCount2"
+const val EXPECTED_OUTPUT_PATH = "src/test/resources/WordCount/ExpectedOutput.txt"
 
 class WordCountTest {
     @Test
@@ -32,6 +34,19 @@ class WordCountTest {
         healthCheckThread.interrupt()
         healthCheckThread.join()
         rmProcess.destroy()
+
+        val expectedOutput = File(EXPECTED_OUTPUT_PATH).reader()
+                .readLines()
+                .chunked(2)
+        checkOutput(File(OUTPUT_DIR_1), expectedOutput)
+        checkOutput(File(OUTPUT_DIR_2), expectedOutput)
+    }
+
+    private fun checkOutput(dir: File, expectedOutput: Iterable<List<String>>) {
+        // Filter out log directories
+        val actual = FileUtils.listFiles(dir, null, false)
+                .map { it.reader().readLines() }
+        assert.that(actual.toSet(), equalTo(expectedOutput.toSet()))
     }
 
     private fun printProcessOutput(process: Process, prefix: String) = startThread {

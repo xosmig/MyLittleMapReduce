@@ -15,6 +15,7 @@ import java.util.concurrent.CountDownLatch
 import kotlin.system.exitProcess
 
 
+// Used to demonstrate that custom classes can be used
 @Serializable
 data class MyOwnKeyClass(val key: Char) {
     override fun toString(): String = key.toString()
@@ -41,6 +42,9 @@ class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
     }
 }
 
+/**
+ * For each symbol counts number of words starting with this symbol
+ */
 class WordCountApp(private val inputDir: Path,
                    private val outputDir: Path): ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
     private val jobComplete = CountDownLatch(1)
@@ -93,5 +97,4 @@ object WordCountMain {
         FileUtils.deleteDirectory(outputDir.toFile())
         WordCountApp(inputDir, outputDir).run()
     }
-
 }
