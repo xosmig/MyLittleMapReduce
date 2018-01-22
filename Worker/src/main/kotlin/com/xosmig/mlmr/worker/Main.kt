@@ -3,8 +3,10 @@ package com.xosmig.mlmr.worker
 import com.xosmig.mlmr.WorkerId
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JSON
+import java.util.*
 import java.util.logging.FileHandler
-import java.util.logging.Level
+import java.util.logging.Level.INFO
+import java.util.logging.Level.SEVERE
 import java.util.logging.Logger
 import java.util.logging.SimpleFormatter
 import kotlin.system.exitProcess
@@ -34,13 +36,13 @@ object Main {
 
         Logger.getLogger("").addHandler(FileHandler(processConfig.logFile).apply { formatter = SimpleFormatter() })
         val logger = Logger.getLogger(Main.javaClass.name)
-        logger.log(Level.INFO, "Process started")
+        logger.log(INFO, "Process started")
 
         try {
             val workerClass = Worker(processConfig.registryHost, processConfig.registryPort, processConfig.id)
             exitProcess(workerClass.run())
         } catch (e: Throwable) {
-            logger.log(Level.SEVERE, "", e)
+            logger.log(SEVERE, "", e)
             throw e
         }
     }

@@ -6,16 +6,18 @@ import com.xosmig.mlmr.JobConfig
 import kotlinx.serialization.Serializable
 import org.apache.commons.io.FileUtils
 import java.io.BufferedInputStream
-import java.io.File
 import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.*
 import java.util.concurrent.CountDownLatch
 import kotlin.system.exitProcess
 
 
 @Serializable
-data class MyOwnKeyClass(val key: String) {
-    override fun toString(): String = key
+data class MyOwnKeyClass(val key: Char) {
+    override fun toString(): String = key.toString()
 }
 
 class WordCountMapper: Mapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::class) {
@@ -23,7 +25,8 @@ class WordCountMapper: Mapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::c
         BufferedInputStream(input).use { bufferedInput ->
             Scanner(bufferedInput).use { scanner ->
                 while (scanner.hasNext()) {
-                    context.output(MyOwnKeyClass(scanner.next()), SInt.one)
+                    val word = scanner.next()
+                    context.output(MyOwnKeyClass(word[0]), SInt.one)
                 }
             }
         }
@@ -38,7 +41,8 @@ class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
     }
 }
 
-class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
+class WordCountApp(private val inputDir: Path,
+                   private val outputDir: Path): ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
     private val jobComplete = CountDownLatch(1)
     private var success = false
 
@@ -47,10 +51,12 @@ class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
                 WordCountMapper::class.java,
                 WordCountReducer::class.java,
                 WordCountReducer::class.java,
-                "/home/andrey/tmp/mlmr/word_count/input",
-                "/home/andrey/tmp/mlmr/word_count/output"
+                inputDir.toString(),
+                outputDir.toString()
         )
+        println("Sending job config ...")
         val id = startJob(config)
+        println("Job config sent: job id = $id")
 
         jobComplete.await()
         if (success) {
@@ -73,7 +79,20 @@ class WordCountApp: ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
     }
 }
 
-fun main(args: Array<String>) {
-    FileUtils.deleteDirectory(File("/home/andrey/tmp/mlmr/word_count/output"))
-    WordCountApp().run()
+object WordCountMain {
+    @JvmStatic
+    fun main(args: Array<String>) {
+        if (args.size != 2) {
+            println("Expected 2 parameters: inputDir outputDir")
+            exitProcess(2)
+        }
+        println("WordCountMain started")
+        val inputDir = Paths.get(args[0])
+        val outputDir = Paths.get(args[1])
+
+        Files.createDirectories(outputDir.parent)
+        FileUtils.deleteDirectory(outputDir.toFile())
+        WordCountApp(inputDir, outputDir).run()
+    }
+
 }

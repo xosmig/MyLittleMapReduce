@@ -38,7 +38,8 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
                 logger.log(INFO, "Starting map task for file '${task.mapInputPath}' ...")
                 using {
                     val input = Files.newInputStream(Paths.get(task.mapInputPath)).autoClose()
-                    val context = WorkerContext(workerId, Paths.get(task.mapOutputDir), task.groupCnt).autoClose()
+                    val context = WorkerContext(workerId, Paths.get(task.mapOutputDir), task.groupCnt,
+                            CBORStreamSerializer).autoClose()
                     mapper.map(input, context)
                 }
             }
@@ -48,7 +49,8 @@ internal class Worker(registryHost: String, registryPort: Int, val workerId: Wor
                 using {
                     val files = Files.newDirectoryStream(Paths.get(task.reduceInputDir)).autoClose()
                     val inputStreams = files.map { Files.newInputStream(it).autoClose() }
-                    val context = WorkerContext(workerId, Paths.get(task.outputDir), groupCnt = 0).autoClose()
+                    val context = WorkerContext(workerId, Paths.get(task.outputDir),/*groupCnt=*/0,
+                            JSONStreamSerializer).autoClose()
                     reducer.reduce(inputStreams, context)
                 }
             }

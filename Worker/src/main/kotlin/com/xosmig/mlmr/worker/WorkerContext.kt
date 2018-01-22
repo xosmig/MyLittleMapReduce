@@ -4,16 +4,19 @@ import com.xosmig.mlmr.Context
 import com.xosmig.mlmr.WorkerId
 import com.xosmig.mlmr.util.ResourceHolder
 import kotlinx.serialization.KSerializer
+import kotlinx.serialization.json.JSON
 import writeCBORObject
 import java.io.Closeable
 import java.io.IOException
 import java.io.OutputStream
+import java.io.PrintStream
 import java.nio.file.Files
 import java.nio.file.Path
 
 class WorkerContext(private val workerId: WorkerId,
                     private val outputDir: Path,
-                    private val groupCnt: Int): Context, Closeable {
+                    private val groupCnt: Int,
+                    private val streamSerializer: StreamSerializer): Context, Closeable {
     private val outputStreams = HashMap<Any, OutputStream>()
     private val resourceHolder = ResourceHolder()
     private var nextKeyIdx = 1
@@ -31,13 +34,29 @@ class WorkerContext(private val workerId: WorkerId,
             }
             val filename = "Worker${workerId}_key#$nextKeyIdx"
             nextKeyIdx += 1
-            val outs = resourceHolder.addResource(Files.newOutputStream(dir.resolve(filename)))
-            outs.writeCBORObject(key, keySerializer)
+            val outs = resourceHolder.addResource(Files.newOutputStream(dir.resolve(filename)).buffered())
+            streamSerializer.serialize(outs, key, keySerializer)
             return@getOrPut outs
         }
-        outs.writeCBORObject(value, valueSerializer)
+        streamSerializer.serialize(outs, value, valueSerializer)
     }
 
     @Throws(IOException::class)
     override fun close() = resourceHolder.close()
+}
+
+interface StreamSerializer {
+    fun<T: Any> serialize(stream: OutputStream, obj: T, serializer: KSerializer<T>)
+}
+
+object CBORStreamSerializer: StreamSerializer {
+    override fun <T : Any> serialize(stream: OutputStream, obj: T, serializer: KSerializer<T>) {
+        stream.writeCBORObject(obj, serializer)
+    }
+}
+
+object JSONStreamSerializer: StreamSerializer {
+    override fun <T : Any> serialize(stream: OutputStream, obj: T, serializer: KSerializer<T>) {
+        PrintStream(stream).println(JSON.stringify(serializer, obj))
+    }
 }

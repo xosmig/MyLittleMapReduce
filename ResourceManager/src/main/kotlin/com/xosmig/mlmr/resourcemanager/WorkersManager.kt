@@ -1,6 +1,7 @@
 package com.xosmig.mlmr.resourcemanager
 
 import com.xosmig.mlmr.WorkerId
+import com.xosmig.mlmr.util.startProcess
 import com.xosmig.mlmr.util.startThread
 import com.xosmig.mlmr.util.withDefer
 import com.xosmig.mlmr.worker.*
@@ -92,9 +93,9 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
         println("Creating map worker $workerId for file: '$inputPath'")
 
         val mapOutputDir = job.tmpDir.resolve("map.output")
+        Files.createDirectories(mapOutputDir)
         try {
             val logFile = job.tmpDir.resolve("map.log").resolve("Worker$workerId")
-            Files.createDirectories(mapOutputDir)
             Files.createDirectories(logFile.parent)
 
             val workerState = WorkerState(workerId, MapTask(
@@ -216,10 +217,10 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
 
     @Throws(IOException::class)
     private fun startWorkerProcess(id: WorkerId, logFile: Path): Process {
-        println("Starting worker $id")
+        println("Starting worker$id process ...")
         // arguments passed as a json string to the only CLI parameter of the new process
         val processConfig = JSON.stringify(WorkerProcessConfig(registryHost, registryPort, id, logFile.toString()))
-        return startProcess(com.xosmig.mlmr.worker.Main::class.java, processConfig)
+        return startProcess(com.xosmig.mlmr.worker.Main.javaClass, processConfig)
     }
 
     private class WorkerState(val id: WorkerId, val task: WorkerTask) {

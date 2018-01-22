@@ -11,7 +11,7 @@ import java.nio.file.Paths
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 
-internal class ResourceManager(
+class ResourceManager(
         private val thisHost: String,
         private val registryPort: Int):
         ResourceManagerRmiForApplicationMaster {
@@ -23,6 +23,7 @@ internal class ResourceManager(
     override fun startJob(applicationMasterStub: ApplicationMasterRmi, config: CompiledJobConfig): JobId {
         try {
             val id = jobIdGenerator.next()
+            println("Got a job: jobId=$id")
 
             val outputDir = Paths.get(config.outputDir)
             Files.createDirectory(outputDir)

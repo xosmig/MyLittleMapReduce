@@ -1,0 +1,10 @@
+Jan 22, 2018 5:01:53 PM com.xosmig.mlmr.worker.Main main
+INFO: Process started
+Jan 22, 2018 5:01:55 PM com.xosmig.mlmr.worker.Worker run
+INFO: Registering...
+Jan 22, 2018 5:01:55 PM com.xosmig.mlmr.worker.Worker run
+INFO: Registered
+Jan 22, 2018 5:01:55 PM com.xosmig.mlmr.worker.Worker run
+INFO: Starting map task for file 'src/main/resources/WordCount/input/WarAndPeaceLines_6001_10000.txt' ...
+Jan 22, 2018 5:01:56 PM com.xosmig.mlmr.worker.Worker run
+INFO: Successfully finished

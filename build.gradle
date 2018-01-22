@@ -33,14 +33,14 @@ allprojects {
 
     dependencies {
         compile "org.jetbrains.kotlin:kotlin-stdlib:$kotlin_version"
+        testCompile "junit:junit:4.12"
+        testCompile "com.natpryce:hamkrest:1.4.2.2"
     }
 }
 
 project(":lib") {
     dependencies {
         compile "org.jetbrains.kotlinx:kotlinx-serialization-runtime:$serialization_version"
-        testCompile "junit:junit:4.12"
-        testCompile "com.natpryce:hamkrest:1.4.2.2"
     }
 }
 
@@ -69,5 +69,6 @@ project(":Examples") {
     dependencies {
         compile project(":ApplicationMaster")
         compile "commons-io:commons-io:2.4"
+        testCompile project(":ResourceManager")
     }
 }
