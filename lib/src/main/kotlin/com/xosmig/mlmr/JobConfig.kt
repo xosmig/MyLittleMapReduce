@@ -9,7 +9,7 @@ class JobConfig private constructor(
         val outputDir: String) {
 
     companion object {
-        fun<K1: Any, V1: Any, K3: Any, V3: Any> create(
+        fun <K1 : Any, V1 : Any, K3 : Any, V3 : Any> create(
                 mapper: Class<out Mapper<K1, V1>>,
                 reducer: Class<out Reducer<K1, V1, K3, V3>>,
                 inputDir: String,
@@ -18,7 +18,7 @@ class JobConfig private constructor(
     }
 }
 
-class CompiledJobConfig(config: JobConfig): Serializable {
+class CompiledJobConfig(config: JobConfig) : Serializable {
     val mapper = ClassRef(config.mapper)
     val reducer = ClassRef(config.reducer)
     val inputDir = config.inputDir

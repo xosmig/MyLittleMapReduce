@@ -4,7 +4,7 @@ import java.io.Serializable
 import java.util.concurrent.atomic.AtomicLong
 
 @kotlinx.serialization.Serializable
-class JobId private constructor(val value: Long): Serializable {
+class JobId private constructor(val value: Long) : Serializable {
 
     class Generator {
         private val nextId = AtomicLong(1)
@@ -17,7 +17,7 @@ class JobId private constructor(val value: Long): Serializable {
 }
 
 @kotlinx.serialization.Serializable
-class WorkerId private constructor(val value: Long): Serializable {
+class WorkerId private constructor(val value: Long) : Serializable {
     class Generator {
         private val nextId = AtomicLong(1)
         fun next(): WorkerId = WorkerId(nextId.getAndIncrement())

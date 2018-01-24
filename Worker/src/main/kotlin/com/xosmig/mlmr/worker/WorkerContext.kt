@@ -16,15 +16,15 @@ import java.nio.file.Path
 class WorkerContext(private val workerId: WorkerId,
                     private val outputDir: Path,
                     private val groupCnt: Int,
-                    private val streamSerializer: StreamSerializer): Context, Closeable {
+                    private val streamSerializer: StreamSerializer) : Context, Closeable {
     private val outputStreams = HashMap<Any, OutputStream>()
     private val resourceHolder = ResourceHolder()
     private var nextKeyIdx = 1
 
     @Synchronized
-    override fun <K: Any, V: Any> output(key: K, value: V,
-                                         keySerializer: KSerializer<K>,
-                                         valueSerializer: KSerializer<V>) {
+    override fun <K : Any, V : Any> output(key: K, value: V,
+                                           keySerializer: KSerializer<K>,
+                                           valueSerializer: KSerializer<V>) {
         val outs = outputStreams.getOrPut(key) {
             val dir = if (groupCnt != 0) {
                 val group = Math.floorMod(key.hashCode(), groupCnt)
@@ -46,16 +46,16 @@ class WorkerContext(private val workerId: WorkerId,
 }
 
 interface StreamSerializer {
-    fun<T: Any> serialize(stream: OutputStream, obj: T, serializer: KSerializer<T>)
+    fun <T : Any> serialize(stream: OutputStream, obj: T, serializer: KSerializer<T>)
 }
 
-object CBORStreamSerializer: StreamSerializer {
+object CBORStreamSerializer : StreamSerializer {
     override fun <T : Any> serialize(stream: OutputStream, obj: T, serializer: KSerializer<T>) {
         stream.writeCBORObject(obj, serializer)
     }
 }
 
-object JSONStreamSerializer: StreamSerializer {
+object JSONStreamSerializer : StreamSerializer {
     override fun <T : Any> serialize(stream: OutputStream, obj: T, serializer: KSerializer<T>) {
         PrintStream(stream).println(JSON.stringify(serializer, obj))
     }

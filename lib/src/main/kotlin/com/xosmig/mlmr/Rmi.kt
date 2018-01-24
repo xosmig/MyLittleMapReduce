@@ -11,7 +11,7 @@ const val WM_REGISTRY_KEY = "WorkersManager"
 /**
  * Used to pass classes via RMI
  */
-class ClassRef(cl: Class<*>): Serializable {
+class ClassRef(cl: Class<*>) : Serializable {
     val classPath: URL = cl.protectionDomain.codeSource.location
     val className: String = cl.canonicalName
 

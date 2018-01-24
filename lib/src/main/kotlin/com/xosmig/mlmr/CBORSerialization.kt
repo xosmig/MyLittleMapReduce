@@ -6,7 +6,7 @@ import java.io.InputStream
 import java.io.OutputStream
 
 @Throws(IOException::class)
-fun<T: Any> InputStream.readCBORObject(serializer: KSerializer<T>): T? {
+fun <T : Any> InputStream.readCBORObject(serializer: KSerializer<T>): T? {
     val objSizeBuf = ByteBuffer.allocate(4)
     val read = read(objSizeBuf.array())
     if (read <= 0) {
@@ -25,7 +25,7 @@ fun<T: Any> InputStream.readCBORObject(serializer: KSerializer<T>): T? {
 }
 
 @Throws(IOException::class)
-fun<T: Any> OutputStream.writeCBORObject(obj: T, serializer: KSerializer<T>) {
+fun <T : Any> OutputStream.writeCBORObject(obj: T, serializer: KSerializer<T>) {
     val objectBuf = CBOR.dump(serializer, obj)
     val objSizeBuf = ByteBuffer.allocate(4).putInt(objectBuf.size)
     write(objSizeBuf.array())

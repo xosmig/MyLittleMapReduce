@@ -16,7 +16,7 @@ import java.util.logging.Logger
 
 class ResourceManager(
         private val thisHost: String,
-        private val registryPort: Int):
+        private val registryPort: Int) :
         ResourceManagerRmiForApplicationMaster {
 
     private val jobIdGenerator = JobId.Generator()

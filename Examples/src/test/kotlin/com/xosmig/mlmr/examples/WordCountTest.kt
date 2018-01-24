@@ -10,8 +10,8 @@ import java.io.*
 
 
 const val INPUT_DIR = "src/main/resources/WordCount/input"
-const val OUTPUT_DIR_1 = "WordCount/test-output/WordCount1"
-const val OUTPUT_DIR_2 = "WordCount/test-output/WordCount2"
+const val OUTPUT_DIR_1 = "test-output/WordCount1"
+const val OUTPUT_DIR_2 = "test-output/WordCount2"
 const val EXPECTED_OUTPUT_PATH = "src/test/resources/WordCount/ExpectedOutput.txt"
 
 class WordCountTest {
@@ -19,7 +19,7 @@ class WordCountTest {
     fun wordCountTest() {
         val rmProcess = startProcess(com.xosmig.mlmr.resourcemanager.Main.javaClass)
         printProcessOutput(rmProcess, "RM")
-        val healthCheckThread =  watchProcessHealth(rmProcess)
+        val healthCheckThread = watchProcessHealth(rmProcess)
 
         Thread.sleep(3 * 1000)
 

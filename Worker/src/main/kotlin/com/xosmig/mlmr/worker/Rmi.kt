@@ -7,7 +7,7 @@ import java.rmi.Remote
 import java.rmi.RemoteException
 import java.util.*
 
-interface WorkersManagerRmi: Remote {
+interface WorkersManagerRmi : Remote {
     /**
      * @return Config for the task or null, if the are no tasks.
      * The MapNode should die in this case.
@@ -26,13 +26,13 @@ interface WorkerRmi : Remote {
 }
 
 
-sealed class WorkerTask: Serializable
+sealed class WorkerTask : Serializable
 
 data class MapTask(val mapper: ClassRef,
                    val mapInputPath: String,
                    val mapOutputDir: String,
-                   val groupCnt: Int): WorkerTask(), Serializable
+                   val groupCnt: Int) : WorkerTask(), Serializable
 
 class ReduceTask(val reducer: ClassRef,
                  val reduceInputDir: String,
-                 val outputDir: String): WorkerTask(), Serializable
+                 val outputDir: String) : WorkerTask(), Serializable

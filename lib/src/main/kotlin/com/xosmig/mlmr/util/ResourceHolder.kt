@@ -3,13 +3,13 @@ package com.xosmig.mlmr.util
 import java.io.Closeable
 import java.io.IOException
 
-class ResourceHolder: Closeable {
+class ResourceHolder : Closeable {
     private val resources = ArrayList<Closeable>(1)
 
-    fun <T: Closeable?> T.autoClose(): T = addResource(this)
+    fun <T : Closeable?> T.autoClose(): T = addResource(this)
 
     @Synchronized
-    fun<T: Closeable?> addResource(resource: T): T {
+    fun <T : Closeable?> addResource(resource: T): T {
         if (resource != null) {
             resources.add(resource)
             // to avoid memory allocations in `resources.add`
@@ -42,7 +42,7 @@ class ResourceHolder: Closeable {
     }
 }
 
-inline fun<R> using(block: ResourceHolder.() -> R): R {
+inline fun <R> using(block: ResourceHolder.() -> R): R {
     ResourceHolder().use {
         return it.block()
     }

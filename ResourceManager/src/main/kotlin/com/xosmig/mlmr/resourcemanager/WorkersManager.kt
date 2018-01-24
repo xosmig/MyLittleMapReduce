@@ -3,6 +3,7 @@ package com.xosmig.mlmr.resourcemanager
 import com.xosmig.mlmr.WorkerId
 import com.xosmig.mlmr.util.startProcess
 import com.xosmig.mlmr.util.startThread
+import com.xosmig.mlmr.util.using
 import com.xosmig.mlmr.util.withDefer
 import com.xosmig.mlmr.worker.*
 import kotlinx.serialization.json.JSON
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 import java.util.logging.Level.*
 import java.util.logging.Logger
 
-internal class WorkersManager(val registryHost: String, val registryPort: Int): WorkersManagerRmi {
+internal class WorkersManager(val registryHost: String, val registryPort: Int) : WorkersManagerRmi {
     private var workerCounter = 0
     private var maxWorkerCnt = 10
     private val workerCounterLock = Object()
@@ -144,12 +145,12 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int): 
     @Throws(IOException::class)
     private fun deleteWorkerOutput(workerId: WorkerId, outputDir: Path) {
         val pattern = "Worker$workerId"
-        val fileFilter = object: IOFileFilter {
+        val fileFilter = object : IOFileFilter {
             override fun accept(file: File): Boolean = file.name.contains(pattern)
             override fun accept(dir: File?, name: String): Boolean = name.contains(pattern)
         }
         // Filter out log directories
-        val directoryFilter = object: IOFileFilter {
+        val directoryFilter = object : IOFileFilter {
             override fun accept(file: File): Boolean = !file.name.contains("log")
             override fun accept(dir: File?, name: String): Boolean = !name.contains("log")
         }

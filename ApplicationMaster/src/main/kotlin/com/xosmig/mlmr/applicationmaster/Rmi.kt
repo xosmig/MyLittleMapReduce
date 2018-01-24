@@ -5,12 +5,12 @@ import com.xosmig.mlmr.JobId
 import java.rmi.Remote
 import java.rmi.RemoteException
 
-interface ResourceManagerRmiForApplicationMaster: Remote {
+interface ResourceManagerRmiForApplicationMaster : Remote {
     @Throws(RemoteException::class)
     fun startJob(applicationMasterStub: ApplicationMasterRmi, config: CompiledJobConfig): JobId
 }
 
-interface ApplicationMasterRmi: Remote {
+interface ApplicationMasterRmi : Remote {
     @Throws(RemoteException::class)
     fun jobComplete(id: JobId)
 

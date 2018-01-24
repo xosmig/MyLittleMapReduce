@@ -34,7 +34,7 @@ class DeferManager {
     }
 }
 
-inline fun<R> withDefer(block: DeferManager.() -> R): R {
+inline fun <R> withDefer(block: DeferManager.() -> R): R {
     val handler = DeferManager()
     try {
         return handler.block()

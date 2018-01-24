@@ -21,7 +21,7 @@ data class MyOwnKeyClass(val key: Char) {
     override fun toString(): String = key.toString()
 }
 
-class WordCountMapper: Mapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::class) {
+class WordCountMapper : Mapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::class) {
     override fun map(input: InputStream, context: NodeContext<MyOwnKeyClass, SInt>) {
         BufferedInputStream(input).use { bufferedInput ->
             Scanner(bufferedInput).use { scanner ->
@@ -34,7 +34,7 @@ class WordCountMapper: Mapper<MyOwnKeyClass, SInt>(MyOwnKeyClass::class, SInt::c
     }
 }
 
-class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
+class WordCountReducer : Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
 (MyOwnKeyClass::class, SInt::class, MyOwnKeyClass::class, SInt::class) {
 
     override fun reduce(key: MyOwnKeyClass, values: Sequence<SInt>, context: NodeContext<MyOwnKeyClass, SInt>) {
@@ -46,7 +46,7 @@ class WordCountReducer: Reducer<MyOwnKeyClass, SInt, MyOwnKeyClass, SInt>
  * For each symbol counts number of words starting with this symbol
  */
 class WordCountApp(private val inputDir: Path,
-                   private val outputDir: Path): ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
+                   private val outputDir: Path) : ApplicationMaster("localhost", DEFAULT_REGISTRY_PORT) {
     private val jobComplete = CountDownLatch(1)
     private var success = false
 

@@ -10,13 +10,11 @@ import java.util.concurrent.TimeUnit
 import java.util.logging.Level.*
 import java.util.logging.Logger
 
-internal class Worker(registryHost: String, registryPort: Int, val workerId: WorkerId): WorkerRmi {
+internal class Worker(registryHost: String, registryPort: Int, val workerId: WorkerId) : WorkerRmi {
     private val workersManager: WorkersManagerRmi
 
     init {
-        @Suppress("NAME_SHADOWING")
-        val registryHost =  if (registryHost == "localhost") { null } else { registryHost }
-        val registry = LocateRegistry.getRegistry(registryHost, registryPort)
+        val registry = LocateRegistry.getRegistry(registryHost.takeUnless { registryHost == "localhost" }, registryPort)
         workersManager = registry.lookup(WM_REGISTRY_KEY) as WorkersManagerRmi
     }
 
