@@ -4,7 +4,6 @@ import com.xosmig.mlmr.WorkerId
 import com.xosmig.mlmr.util.startProcess
 import com.xosmig.mlmr.util.startThread
 import com.xosmig.mlmr.util.using
-import com.xosmig.mlmr.util.withDefer
 import com.xosmig.mlmr.worker.*
 import kotlinx.serialization.json.JSON
 import org.apache.commons.io.FileUtils
@@ -161,7 +160,7 @@ internal class WorkersManager(val registryHost: String, val registryPort: Int) :
     }
 
     @Throws(Exception::class)
-    private fun runWorker(workerState: WorkerState, logFile: Path) = withDefer {
+    private fun runWorker(workerState: WorkerState, logFile: Path) = using {
         workers.put(workerState.id, workerState)
         defer { workers.remove(workerState.id) }
         val process = startWorkerProcess(workerState.id, logFile)

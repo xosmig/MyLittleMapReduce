@@ -11,39 +11,39 @@ class ResourceHolder : Closeable {
     @Synchronized
     fun <T : Closeable?> addResource(resource: T): T {
         if (resource != null) {
-            resources.add(resource)
-            // to avoid memory allocations in `resources.add`
-            resources.ensureCapacity(resources.size + 1)
+            try {
+                resources.add(resource)
+            } catch (th: Throwable) {
+                resource.close()
+                throw th
+            }
         }
         return resource
     }
 
+    inline fun defer(crossinline block: () -> Unit) = addResource(Closeable { block() })
+
     @Synchronized
     @Throws(IOException::class)
     override fun close() {
-        var exception: Exception? = null
-        for (i in resources.size - 1 downTo 0) {
+        var throwable: Throwable? = null
+        var i = resources.size - 1
+        while (i >= 0) {
             try {
                 resources[i].close()
-            } catch (ex: Exception) {
-                if (exception == null) {
-                    exception = ex
+            } catch (th: Throwable) {
+                if (throwable == null) {
+                    throwable = th
                 } else {
-                    exception.addSuppressed(ex)
+                    throwable.addSuppressed(th)
                 }
             }
+            i -= 1
         }
-        if (exception != null) {
-            throw exception
+        if (throwable != null) {
+            throw throwable
         }
-
-        resources.clear()
-        resources.ensureCapacity(1)
     }
 }
 
-inline fun <R> using(block: ResourceHolder.() -> R): R {
-    ResourceHolder().use {
-        return it.block()
-    }
-}
+inline fun <R> using(block: ResourceHolder.() -> R): R = ResourceHolder().use(block)
